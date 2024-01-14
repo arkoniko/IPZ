@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ipz_parkinghunter/Pages/BurgerMenu.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:ipz_parkinghunter/components/map_waypoint.dart';
 import 'package:firebase_database/firebase_database.dart';
-
-
-//Widget that will be response for every logic changes eg. displaying waypoints, path
 
 class MainPage extends StatefulWidget {
   @override
@@ -13,8 +9,32 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
+  final DatabaseReference database = FirebaseDatabase(
+    databaseURL: 'https://ipzparkinghunter-30f5b-default-rtdb.europe-west1.firebasedatabase.app/',
+  ).reference().child("Markery");
+
   late GoogleMapController _mapController;
   Set<Marker> _markers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    loadMarkers();
+  }
+
+  Future<void> loadMarkers() async {
+    database.onChildAdded.listen((event) {
+      Map<dynamic, dynamic>? value = event.snapshot.value as Map?;
+
+      if (value != null) {
+        double latitude = value['latitude'];
+        double longitude = value['longitude'];
+        LatLng position = LatLng(latitude, longitude);
+        addMarker(_markers, position);
+        setState(() {});
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +53,7 @@ class _MainPageState extends State<MainPage> {
         ),
         centerTitle: true,
       ),
-      drawer: BurgerMenu(), //assigned BurgerMenu into our MainPage
+      drawer: BurgerMenu(),
       body: Column(
         children: [
           Expanded(
@@ -60,9 +80,15 @@ class _MainPageState extends State<MainPage> {
                     },
                     markers: _markers,
                     onTap: (position) {
-                      addMarker(_markers, position);
-                        //setState refreshing map, making waypoints visible
-                        setState(() {}); 
+                      // Dodaj punkt do bazy danych Firebase
+                      database.push().set({
+                        'latitude': position.latitude,
+                        'longitude': position.longitude,
+                      }).then((_) {
+                        // Po dodaniu punktu do bazy danych, dodaj go również do lokalnego zbioru _markers i odśwież mapę
+                        addMarker(_markers, position);
+                        setState(() {});
+                      }).catchError((error) => print('Error: $error'));
                     },
                   ),
                 ),
@@ -77,6 +103,15 @@ class _MainPageState extends State<MainPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void addMarker(Set<Marker> markers, LatLng position) {
+    markers.add(
+      Marker(
+        markerId: MarkerId(position.toString()),
+        position: position,
       ),
     );
   }
