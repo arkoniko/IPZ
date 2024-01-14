@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ipz_parkinghunter/Pages/BurgerMenu.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ipz_parkinghunter/components/map_waypoint.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 
 //Widget that will be response for every logic changes eg. displaying waypoints, path
