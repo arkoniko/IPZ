@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:ipz_parkinghunter/Pages/BugReportView.dart';
+import 'package:ipz_parkinghunter/Pages/UserDataView.dart';
 
 class BurgerMenu extends StatelessWidget {
   final user = FirebaseAuth.instance.currentUser!;
@@ -14,6 +15,15 @@ class BurgerMenu extends StatelessWidget {
     Navigator.push(context, 
     MaterialPageRoute(
       builder: (context)=>BugReportView()
+      ),
+      );
+  }
+
+void DataView(BuildContext context){
+    //Open BugReport Page
+    Navigator.push(context, 
+    MaterialPageRoute(
+      builder: (context)=>UserDataView(user.uid)
       ),
       );
   }
@@ -100,7 +110,7 @@ class BurgerMenu extends StatelessWidget {
           ),
           ListTile(
             onTap: () {
-              Navigator.pop(context);
+              DataView(context);
               // TBD
             },
             leading: Icon(Icons.person),
