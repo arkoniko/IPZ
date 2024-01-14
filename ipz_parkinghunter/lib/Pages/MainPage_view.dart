@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:ipz_parkinghunter/Pages/BurgerMenu.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:ipz_parkinghunter/components/map_waypoint.dart';
 
-class MainPage extends StatelessWidget {
+
+//Widget that will be response for every logic changes eg. displaying waypoints, path
+
+class MainPage extends StatefulWidget {
+  @override
+  _MainPageState createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
+  late GoogleMapController _mapController;
+  Set<Marker> _markers = {};
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,6 +52,17 @@ class MainPage extends StatelessWidget {
                       target: LatLng(53.447242736816406, 14.492215156555176),
                       zoom: 10,
                     ),
+                    onMapCreated: (GoogleMapController controller) {
+                      setState(() {
+                        _mapController = controller;
+                      });
+                    },
+                    markers: _markers,
+                    onTap: (position) {
+                      addMarker(_markers, position);
+                        //setState refreshing map, making waypoints visible
+                        setState(() {}); 
+                    },
                   ),
                 ),
               ),
