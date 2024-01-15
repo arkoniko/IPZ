@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:ipz_parkinghunter/Pages/BurgerMenu.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ipz_parkinghunter/components/map_waypoint.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:ipz_parkinghunter/Pages/BurgerMenu.dart';
 
 class MainPage extends StatefulWidget {
   @override
@@ -12,17 +13,12 @@ class _MainPageState extends State<MainPage> {
   late GoogleMapController _mapController;
   Set<Marker> _markers = {};
   bool _isFullscreen = false; // State variable for fullscreen mode
-  bool _isButtonPressed = false; // Flag to indicate button press
+  ValueNotifier<bool> isDialOpen = ValueNotifier(false);
 
   void _toggleFullscreen() {
     setState(() {
       _isFullscreen = !_isFullscreen;
-      _isButtonPressed = true;
-
-      // Reset the flag after a short delay
-      Future.delayed(Duration(milliseconds: 300), () {
-        _isButtonPressed = false;
-      });
+      // Your logic after state change
     });
   }
 
@@ -52,6 +48,7 @@ class _MainPageState extends State<MainPage> {
           _isFullscreen ? _buildMinimizeButton() : _buildFullscreenButton(),
         ],
       ),
+      floatingActionButton: _buildSpeedDial(),
     );
   }
 
@@ -62,8 +59,7 @@ class _MainPageState extends State<MainPage> {
       right: 0,
       bottom: _isFullscreen ? 0 : MediaQuery.of(context).size.height * 0.4,
       child: ClipRRect(
-        borderRadius:
-            _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
+        borderRadius: _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
         child: GoogleMap(
           initialCameraPosition: CameraPosition(
             target: LatLng(53.447242736816406, 14.492215156555176),
@@ -74,10 +70,7 @@ class _MainPageState extends State<MainPage> {
           },
           markers: _markers,
           onTap: (position) {
-            if (!_isButtonPressed) {
-              addMarker(_markers, position);
-              setState(() {}); // Refresh map to display new markers
-            }
+            // Your logic related to the map
           },
         ),
       ),
@@ -87,12 +80,9 @@ class _MainPageState extends State<MainPage> {
   Widget _buildFullscreenButton() {
     return Positioned(
       left: 20,
-      bottom: MediaQuery.of(context).padding.bottom +
-          20, // Positioned in lower left corner
+      bottom: MediaQuery.of(context).padding.bottom + 20,
       child: FloatingActionButton(
-        onPressed: () {
-          _toggleFullscreen();
-        },
+        onPressed: _toggleFullscreen,
         child: Icon(Icons.fullscreen),
       ),
     );
@@ -101,15 +91,26 @@ class _MainPageState extends State<MainPage> {
   Widget _buildMinimizeButton() {
     return Positioned(
       right: 20,
-      top: MediaQuery.of(context).padding.top +
-          20, // Positioned in top right corner
+      top: MediaQuery.of(context).padding.top + 20,
       child: FloatingActionButton(
-        onPressed: () {
-          _toggleFullscreen();
-        },
-        child: Icon(Icons.close),
-        backgroundColor: Colors.red,
-      ),
+        onPressed: _toggleFullscreen,
+    child: Icon(Icons.close),
+    backgroundColor: Colors.red,
+    ),
+  );
+}
+
+  Widget _buildSpeedDial(){
+    return SpeedDial(
+      animatedIcon: AnimatedIcons.menu_close,
+      openCloseDial: isDialOpen,
+      backgroundColor: Colors.redAccent,
+      overlayColor: Colors.grey,
+      overlayOpacity: 0.5,
+      spacing: 15,
+      spaceBetweenChildren: 15,
+      closeManually: true,
+      children: [],
     );
   }
 }
