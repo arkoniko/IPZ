@@ -32,7 +32,7 @@ class _MainPageState extends State<MainPage> {
               elevation: 0.0,
               backgroundColor: Color.fromARGB(247, 15, 101, 158),
               title: Text(
-                'version 1.0.2',
+                'version 1.0.8',
                 style: TextStyle(
                   fontFamily: 'Arial',
                   color: Colors.white,
@@ -104,13 +104,34 @@ class _MainPageState extends State<MainPage> {
     return SpeedDial(
       animatedIcon: AnimatedIcons.menu_close,
       openCloseDial: isDialOpen,
-      backgroundColor: Colors.redAccent,
+      backgroundColor: Color.fromARGB(247, 15, 101, 158),
       overlayColor: Colors.grey,
       overlayOpacity: 0.5,
       spacing: 15,
       spaceBetweenChildren: 15,
       closeManually: true,
-      children: [],
+      children: [
+        SpeedDialChild(
+          child: Icon(Icons.share_rounded),
+          label: 'Udostepnij',
+          backgroundColor: Color.fromARGB(247, 15, 101, 158),
+          onTap: (){
+            print('Test udostepniania');
+          },
+        ),
+        SpeedDialChild(
+          child: Icon(Icons.gps_fixed_rounded),
+          label: 'Wolne miejsce parkingowe',
+          backgroundColor: Colors.redAccent,
+          onTap: (){
+           // LatLng position =  LatLng(53.447242736816406, 14.492215156555176);
+           // addMarker(_markers, position);
+           //setState(() {
+             
+           //});
+          } 
+        )
+      ],
     );
   }
 }
