@@ -1,0 +1,30 @@
+The system is: Windows - 10.0.22621 - AMD64
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: C:/MinGW/bin/g++.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.exe"
+
+The CXX compiler identification is GNU, found in "C:/Users/nikol/IPZ/build/CMakeFiles/3.23.22060601-MSVC_2/CompilerIdCXX/a.exe"
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: C:/Users/nikol/IPZ/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):C:/MinGW/bin/mingw32-make.exe -f Makefile cmTC_56ddd/fast && C:/MinGW/bin/mingw32-make.exe  -f CMakeFiles\cmTC_56ddd.dir\build.make CMakeFiles/cmTC_56ddd.dir/build
+mingw32-make.exe[1]: Entering directory 'C:/Users/nikol/IPZ/build/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_56ddd.dir/testCXXCompiler.cxx.obj
+C:\MinGW\bin\g++.exe    -o CMakeFiles\cmTC_56ddd.dir\testCXXCompiler.cxx.obj -c C:\Users\nikol\IPZ\build\CMakeFiles\CMakeTmp\testCXXCompiler.cxx
+Linking CXX executable cmTC_56ddd.exe
+"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E cmake_link_script CMakeFiles\cmTC_56ddd.dir\link.txt --verbose=1
+"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E rm -f CMakeFiles\cmTC_56ddd.dir/objects.a
+C:\MinGW\bin\ar.exe qc CMakeFiles\cmTC_56ddd.dir/objects.a @CMakeFiles\cmTC_56ddd.dir\objects1.rsp
+C:\MinGW\bin\g++.exe -Wl,--whole-archive CMakeFiles\cmTC_56ddd.dir/objects.a -Wl,--no-whole-archive -o cmTC_56ddd.exe -Wl,--out-implib,libcmTC_56ddd.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\cmTC_56ddd.dir\linklibs.rsp
+mingw32-make.exe[1]: Leaving directory 'C:/Users/nikol/IPZ/build/CMakeFiles/CMakeTmp'
+
+
+
