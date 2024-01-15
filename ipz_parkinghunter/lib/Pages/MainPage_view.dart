@@ -36,7 +36,7 @@ class _MainPageState extends State<MainPage> {
               elevation: 0.0,
               backgroundColor: Color.fromARGB(247, 15, 101, 158),
               title: Text(
-                'version 1.0.2',
+                'version 1.0.3',
                 style: TextStyle(
                   fontFamily: 'Arial',
                   color: Colors.white,
