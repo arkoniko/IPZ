@@ -49,6 +49,16 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
+  // Method to zoom in the map
+  void _zoomIn() {
+    _mapController.animateCamera(CameraUpdate.zoomIn());
+  }
+
+  // Method to zoom out the map
+  void _zoomOut() {
+    _mapController.animateCamera(CameraUpdate.zoomOut());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,7 +69,7 @@ class _MainPageState extends State<MainPage> {
               elevation: 0.0,
               backgroundColor: Color.fromARGB(247, 15, 101, 158),
               title: Text(
-                'version 1.0.8',
+                'version 1.0.9',
                 style: TextStyle(
                   fontFamily: 'Arial',
                   color: Colors.white,
@@ -71,16 +81,37 @@ class _MainPageState extends State<MainPage> {
       drawer: _isFullscreen ? null : BurgerMenu(),
       body: Stack(
         children: [
-          _buildGoogleMap(context), // This should be outside of any conditions
-          if (!_isFullscreen) ...[
-            _buildFloatingActionButtons(), // This ensures FABs are only shown when not in fullscreen
-          ],
-          if (_isFullscreen) ...[
-            _buildMinimizeButton(),
-          ],
+          _buildGoogleMap(context),
+          _buildZoomControls(), // Always show zoom controls
+          _buildFloatingActionButtons(!_isFullscreen),
+          if (_isFullscreen) _buildMinimizeButton(),
         ],
       ),
-      // Remove the floatingActionButton property since we are using a custom layout for the FABs
+    );
+  }
+
+  Widget _buildZoomControls() {
+    return Positioned(
+      left: 20, // Adjust the position as needed
+      bottom:
+          MediaQuery.of(context).size.height * 0.5, // Center on the left side
+      child: Column(
+        children: [
+          FloatingActionButton(
+            mini: true, // for smaller buttons
+            onPressed: _zoomIn,
+            child: Icon(Icons.add),
+            heroTag: 'zoomIn',
+          ),
+          SizedBox(height: 20), // Space between the buttons
+          FloatingActionButton(
+            mini: true, // for smaller buttons
+            onPressed: _zoomOut,
+            child: Icon(Icons.remove),
+            heroTag: 'zoomOut',
+          ),
+        ],
+      ),
     );
   }
 
@@ -96,6 +127,7 @@ class _MainPageState extends State<MainPage> {
         borderRadius:
             _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
         child: GoogleMap(
+          zoomControlsEnabled: false, // Disable default zoom controls
           initialCameraPosition: CameraPosition(
             target: LatLng(53.447242736816406, 14.492215156555176),
             zoom: 10,
@@ -122,7 +154,8 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget _buildFloatingActionButtons() {
+  Widget _buildFloatingActionButtons(bool showFullscreenButton) {
+    // Return a Column containing the SpeedDial button and conditionally the fullscreen button
     return Positioned(
       right: 20,
       bottom: MediaQuery.of(context).padding.bottom + 20,
@@ -130,8 +163,10 @@ class _MainPageState extends State<MainPage> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           _buildSpeedDial(),
-          SizedBox(height: 20),
-          _buildFullscreenButton(),
+          if (showFullscreenButton) ...[
+            SizedBox(height: 20), // Spacing between buttons, adjust as needed
+            _buildFullscreenButton(),
+          ],
         ],
       ),
     );
