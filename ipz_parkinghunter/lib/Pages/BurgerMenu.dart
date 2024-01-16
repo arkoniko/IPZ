@@ -2,30 +2,29 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:ipz_parkinghunter/Pages/BugReportView.dart';
 import 'package:ipz_parkinghunter/Pages/UserDataView.dart';
+import 'package:ipz_parkinghunter/Pages/HelpPageView.dart';
 
 class BurgerMenu extends StatelessWidget {
   final user = FirebaseAuth.instance.currentUser!;
-  
+
   void SignUserOut() {
     FirebaseAuth.instance.signOut();
   }
 
-  void ReportBug(BuildContext context){
+  void ReportBug(BuildContext context) {
     //Open BugReport Page
-    Navigator.push(context, 
-    MaterialPageRoute(
-      builder: (context)=>BugReportView()
-      ),
-      );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => BugReportView()),
+    );
   }
 
-void DataView(BuildContext context){
+  void DataView(BuildContext context) {
     //Open BugReport Page
-    Navigator.push(context, 
-    MaterialPageRoute(
-      builder: (context)=>UserDataView(user.uid)
-      ),
-      );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => UserDataView(user.uid)),
+    );
   }
 
   @override
@@ -33,10 +32,13 @@ void DataView(BuildContext context){
     return Drawer(
       child: ListView(
         children: [
-          DrawerHeader( // About user in sidebar
-            decoration: BoxDecoration(color: Color.fromARGB(247, 15, 101, 158)),//login backgorund 
+          DrawerHeader(
+            // About user in sidebar
+            decoration: BoxDecoration(
+                color: Color.fromARGB(247, 15, 101, 158)), //login backgorund
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // Circle cut and align "AA" to the left top
+              crossAxisAlignment: CrossAxisAlignment
+                  .start, // Circle cut and align "AA" to the left top
               children: [
                 Container(
                   height: 60,
@@ -47,7 +49,7 @@ void DataView(BuildContext context){
                   ),
                   child: Center(
                     child: Text(
-                      "AA",//profile icon 
+                      "AA", //profile icon
                       style: TextStyle(fontSize: 26),
                     ),
                   ),
@@ -118,8 +120,12 @@ void DataView(BuildContext context){
           ),
           ListTile(
             onTap: () {
-              Navigator.pop(context);
-              // TBD
+              Navigator.pop(context); // Zamyka Drawer
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          HelpPage())); // Przekierowuje do HelpPage
             },
             leading: Icon(Icons.question_mark),
             title: Text("Pomoc", style: TextStyle(fontSize: 16)),
