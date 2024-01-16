@@ -228,34 +228,38 @@ class _MainPageState extends State<MainPage> {
   }
 
   Future<void> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+  bool serviceEnabled;
+  LocationPermission permission;
 
-    // Check if location services are enabled
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // Location services are not enabled
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        // Permissions are denied
-        return Future.error('Location permissions are denied');
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      // Permissions are denied forever
-      return Future.error('Location permissions are permanently denied');
-    }
-
-    // When permissions are granted, get the current position
-    Position position = await Geolocator.getCurrentPosition();
-    _setUserLocationMarker(position);
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    print('Location services are disabled.');
+    return; // Optionally, handle this case by setting a default location
   }
+
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+  permission = await Geolocator.requestPermission();
+  if (permission == LocationPermission.denied) {
+  print('Location permissions are denied');
+  return; // Optionally, handle this case by setting a default location
+}
+}
+
+  if (permission == LocationPermission.deniedForever) {
+  print('Location permissions are permanently denied');
+  return; // Optionally, handle this case by setting a default location
+}
+
+  // When permissions are granted, get the current position
+  try {
+  Position position = await Geolocator.getCurrentPosition();
+  _setUserLocationMarker(position);
+} catch (e) {
+  print('Failed to get current position: $e');
+  // Handle the error by setting a default location, or leave as is
+}
+}
 
   void _setUserLocationMarker(Position position) {
     LatLng userPosition = LatLng(position.latitude, position.longitude);
