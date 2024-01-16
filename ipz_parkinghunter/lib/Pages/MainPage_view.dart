@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ipz_parkinghunter/components/map_waypoint.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:ipz_parkinghunter/Pages/BurgerMenu.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class MainPage extends StatefulWidget {
   @override
@@ -10,6 +11,9 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
+  final DatabaseReference database = FirebaseDatabase(
+    databaseURL: 'https://ipzparkinghunter-30f5b-default-rtdb.europe-west1.firebasedatabase.app/',
+  ).reference().child("Markery");
   late GoogleMapController _mapController;
   Set<Marker> _markers = {};
   bool _isFullscreen = false; // State variable for fullscreen mode
@@ -19,6 +23,25 @@ class _MainPageState extends State<MainPage> {
     setState(() {
       _isFullscreen = !_isFullscreen;
       // Your logic after state change
+    });
+  }
+  @override
+  void initState() {
+    super.initState();
+    loadMarkers();
+  }
+
+  Future<void> loadMarkers() async {
+    database.onChildAdded.listen((event) {
+      Map<dynamic, dynamic>? value = event.snapshot.value as Map?;
+
+      if (value != null) {
+        double latitude = value['latitude'];
+        double longitude = value['longitude'];
+        LatLng position = LatLng(latitude, longitude);
+        addMarker(_markers, position);
+        setState(() {});
+      }
     });
   }
 
@@ -71,6 +94,16 @@ class _MainPageState extends State<MainPage> {
           markers: _markers,
           onTap: (position) {
             // Your logic related to the map
+
+                      // Dodaj punkt do bazy danych Firebase
+                      database.push().set({
+                        'latitude': position.latitude,
+                        'longitude': position.longitude,
+                      }).then((_) {
+                        // Po dodaniu punktu do bazy danych, dodaj go również do lokalnego zbioru _markers i odśwież mapę
+                        addMarker(_markers, position);
+                        setState(() {});
+                      }).catchError((error) => print('Error: $error'));
           },
         ),
       ),
