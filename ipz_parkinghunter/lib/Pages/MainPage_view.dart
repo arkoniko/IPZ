@@ -4,6 +4,7 @@ import 'package:ipz_parkinghunter/components/map_waypoint.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:ipz_parkinghunter/Pages/BurgerMenu.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:geolocator/geolocator.dart';
 
 class MainPage extends StatefulWidget {
   @override
@@ -31,6 +32,7 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     loadMarkers();
+    _determinePosition();
   }
 
   Future<void> loadMarkers() async {
@@ -188,5 +190,56 @@ class _MainPageState extends State<MainPage> {
             })
       ],
     );
+  }
+
+  Future<void> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Check if location services are enabled
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Location services are not enabled
+      return Future.error('Location services are disabled.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Permissions are denied
+        return Future.error('Location permissions are denied');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      // Permissions are denied forever
+      return Future.error('Location permissions are permanently denied');
+    }
+
+    // When permissions are granted, get the current position
+    Position position = await Geolocator.getCurrentPosition();
+    _setUserLocationMarker(position);
+  }
+
+  void _setUserLocationMarker(Position position) {
+    LatLng userPosition = LatLng(position.latitude, position.longitude);
+
+    setState(() {
+      // Add a new marker to the map for the user's current position
+      _markers.add(Marker(
+        markerId: MarkerId(
+            userPosition.toString()), // Unique identifier for the marker
+        position: userPosition, // The location of the marker
+        infoWindow: InfoWindow(
+          title: 'Your Location',
+          snippet: 'Lat: ${position.latitude}, Lng: ${position.longitude}',
+        ),
+        icon: BitmapDescriptor.defaultMarker, // Default pin icon
+      ));
+
+      // Optionally, move the camera to the user's current position
+      _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
+    });
   }
 }
