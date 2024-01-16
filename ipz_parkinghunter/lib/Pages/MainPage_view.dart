@@ -157,11 +157,10 @@ class _MainPageState extends State<MainPage> {
           label: 'Wolne miejsce parkingowe',
           backgroundColor: Colors.redAccent,
           onTap: (){
-           // LatLng position =  LatLng(53.447242736816406, 14.492215156555176);
-           // addMarker(_markers, position);
-           //setState(() {
-             
-           //});
+           LatLng position =  LatLng(53.447242736816406, 14.492215156555176);
+           addMarker(_markers, position);
+           setState(() {
+           });
           } 
         )
       ],
