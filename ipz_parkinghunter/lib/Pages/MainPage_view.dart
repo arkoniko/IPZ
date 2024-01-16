@@ -12,7 +12,8 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   final DatabaseReference database = FirebaseDatabase(
-    databaseURL: 'https://ipzparkinghunter-30f5b-default-rtdb.europe-west1.firebasedatabase.app/',
+    databaseURL:
+        'https://ipzparkinghunter-30f5b-default-rtdb.europe-west1.firebasedatabase.app/',
   ).reference().child("Markery");
   late GoogleMapController _mapController;
   Set<Marker> _markers = {};
@@ -25,6 +26,7 @@ class _MainPageState extends State<MainPage> {
       // Your logic after state change
     });
   }
+
   @override
   void initState() {
     super.initState();
@@ -67,22 +69,30 @@ class _MainPageState extends State<MainPage> {
       drawer: _isFullscreen ? null : BurgerMenu(),
       body: Stack(
         children: [
-          _buildGoogleMap(),
-          _isFullscreen ? _buildMinimizeButton() : _buildFullscreenButton(),
+          _buildGoogleMap(context), // This should be outside of any conditions
+          if (!_isFullscreen) ...[
+            _buildFloatingActionButtons(), // This ensures FABs are only shown when not in fullscreen
+          ],
+          if (_isFullscreen) ...[
+            _buildMinimizeButton(),
+          ],
         ],
       ),
-      floatingActionButton: _buildSpeedDial(),
+      // Remove the floatingActionButton property since we are using a custom layout for the FABs
     );
   }
 
-  Widget _buildGoogleMap() {
+  Widget _buildGoogleMap(BuildContext context) {
+    double bottomPadding =
+        _isFullscreen ? 0 : MediaQuery.of(context).size.height * 0.1;
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
       bottom: _isFullscreen ? 0 : MediaQuery.of(context).size.height * 0.4,
       child: ClipRRect(
-        borderRadius: _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
+        borderRadius:
+            _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
         child: GoogleMap(
           initialCameraPosition: CameraPosition(
             target: LatLng(53.447242736816406, 14.492215156555176),
@@ -95,17 +105,32 @@ class _MainPageState extends State<MainPage> {
           onTap: (position) {
             // Your logic related to the map
 
-                      // Dodaj punkt do bazy danych Firebase
-                      database.push().set({
-                        'latitude': position.latitude,
-                        'longitude': position.longitude,
-                      }).then((_) {
-                        // Po dodaniu punktu do bazy danych, dodaj go również do lokalnego zbioru _markers i odśwież mapę
-                        addMarker(_markers, position);
-                        setState(() {});
-                      }).catchError((error) => print('Error: $error'));
+            // Dodaj punkt do bazy danych Firebase
+            database.push().set({
+              'latitude': position.latitude,
+              'longitude': position.longitude,
+            }).then((_) {
+              // Po dodaniu punktu do bazy danych, dodaj go również do lokalnego zbioru _markers i odśwież mapę
+              addMarker(_markers, position);
+              setState(() {});
+            }).catchError((error) => print('Error: $error'));
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButtons() {
+    return Positioned(
+      right: 20,
+      bottom: MediaQuery.of(context).padding.bottom + 20,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          _buildSpeedDial(),
+          SizedBox(height: 20),
+          _buildFullscreenButton(),
+        ],
       ),
     );
   }
@@ -127,13 +152,13 @@ class _MainPageState extends State<MainPage> {
       top: MediaQuery.of(context).padding.top + 20,
       child: FloatingActionButton(
         onPressed: _toggleFullscreen,
-    child: Icon(Icons.close),
-    backgroundColor: Colors.red,
-    ),
-  );
-}
+        child: Icon(Icons.close),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 
-  Widget _buildSpeedDial(){
+  Widget _buildSpeedDial() {
     return SpeedDial(
       animatedIcon: AnimatedIcons.menu_close,
       openCloseDial: isDialOpen,
@@ -148,21 +173,19 @@ class _MainPageState extends State<MainPage> {
           child: Icon(Icons.share_rounded),
           label: 'Udostepnij',
           backgroundColor: Color.fromARGB(247, 15, 101, 158),
-          onTap: (){
+          onTap: () {
             print('Test udostepniania');
           },
         ),
         SpeedDialChild(
-          child: Icon(Icons.gps_fixed_rounded),
-          label: 'Wolne miejsce parkingowe',
-          backgroundColor: Colors.redAccent,
-          onTap: (){
-           LatLng position =  LatLng(53.447242736816406, 14.492215156555176);
-           addMarker(_markers, position);
-           setState(() {
-           });
-          } 
-        )
+            child: Icon(Icons.gps_fixed_rounded),
+            label: 'Wolne miejsce parkingowe',
+            backgroundColor: Colors.redAccent,
+            onTap: () {
+              LatLng position = LatLng(53.447242736816406, 14.492215156555176);
+              addMarker(_markers, position);
+              setState(() {});
+            })
       ],
     );
   }
