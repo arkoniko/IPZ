@@ -6,20 +6,26 @@ import 'package:ipz_parkinghunter/Pages/BurgerMenu.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:geolocator/geolocator.dart';
 
+//add marker and remove marker are in this file, need to be reorganised in future
+//also check Widget _builddeletebutton right now
+
 class MainPage extends StatefulWidget {
   @override
   _MainPageState createState() => _MainPageState();
 }
 
 class _MainPageState extends State<MainPage> {
+  //create database refevrence
   final DatabaseReference database = FirebaseDatabase(
     databaseURL:
         'https://ipzparkinghunter-30f5b-default-rtdb.europe-west1.firebasedatabase.app/',
   ).reference().child("Markery");
+
   late GoogleMapController _mapController;
   Set<Marker> _markers = {};
   bool _isFullscreen = false; // State variable for fullscreen mode
   ValueNotifier<bool> isDialOpen = ValueNotifier(false);
+  String? _selectedMarkerId; // selected waypoint id
 
   void _toggleFullscreen() {
     setState(() {
@@ -35,7 +41,7 @@ class _MainPageState extends State<MainPage> {
     _determinePosition();
   }
 
-  Future<void> loadMarkers() async {
+   Future<void> loadMarkers() async {
     database.onChildAdded.listen((event) {
       Map<dynamic, dynamic>? value = event.snapshot.value as Map?;
 
@@ -43,10 +49,29 @@ class _MainPageState extends State<MainPage> {
         double latitude = value['latitude'];
         double longitude = value['longitude'];
         LatLng position = LatLng(latitude, longitude);
-        addMarker(_markers, position);
+        addMarker(_markers, position, event.snapshot.key!);
         setState(() {});
       }
     });
+  }
+
+  void addMarker(Set<Marker> markers, LatLng position, String markerId) {
+    markers.add(
+      Marker(
+        markerId: MarkerId(markerId),
+        position: position,
+        infoWindow: InfoWindow(
+          title: 'Miejsce zajęte',
+        ),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        onTap: () {
+          setState(() {
+            _selectedMarkerId = markerId;
+          });
+          print("Selected marker ID: $_selectedMarkerId");
+        },
+      ),
+    );
   }
 
   // Method to zoom in the map
@@ -91,7 +116,7 @@ void _showErrorSnackBar(String message) {
               elevation: 0.0,
               backgroundColor: Color.fromARGB(247, 15, 101, 158),
               title: Text(
-                'version 1.0.9',
+                'version 1.1.0',
                 style: TextStyle(
                   fontFamily: 'Arial',
                   color: Colors.white,
@@ -103,7 +128,7 @@ void _showErrorSnackBar(String message) {
       drawer: _isFullscreen ? null : BurgerMenu(),
       body: Stack(
         children: [
-          _buildGoogleMap(context),
+          _buildGoogleMap(),  //removed context for now
           _buildZoomControls(), // Always show zoom controls
           _buildFloatingActionButtons(!_isFullscreen),
           if (_isFullscreen) _buildMinimizeButton(),
@@ -143,47 +168,48 @@ void _showErrorSnackBar(String message) {
   );
 }
 
+  Widget _buildGoogleMap() {
+  return Positioned(
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: _isFullscreen ? 0 : MediaQuery.of(context).size.height * 0.4,
+    child: Column(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: LatLng(53.447242736816406, 14.492215156555176),
+                zoom: 10,
+              ),
+              onMapCreated: (GoogleMapController controller) {
+                _mapController = controller;
+              },
+              markers: _markers,
+              onTap: (position) {
+                // Your logic related to the map
 
-
-
-  Widget _buildGoogleMap(BuildContext context) {
-    double bottomPadding =
-        _isFullscreen ? 0 : MediaQuery.of(context).size.height * 0.1;
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: _isFullscreen ? 0 : MediaQuery.of(context).size.height * 0.4,
-      child: ClipRRect(
-        borderRadius:
-            _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
-        child: GoogleMap(
-          zoomControlsEnabled: false, // Disable default zoom controls
-          initialCameraPosition: CameraPosition(
-            target: LatLng(53.447242736816406, 14.492215156555176),
-            zoom: 10,
+                //add point to current map -> add point to database
+                DatabaseReference newMarkerRef = database.push();
+                newMarkerRef.set({
+                  'latitude': position.latitude,
+                  'longitude': position.longitude,
+                }).then((_) {
+                  
+                  addMarker(_markers, position, newMarkerRef.key!);
+                  setState(() {});
+                }).catchError((error) => print('Error: $error'));
+              },
+            ),
           ),
-          onMapCreated: (GoogleMapController controller) {
-            _mapController = controller;
-          },
-          markers: _markers,
-          onTap: (position) {
-            // Your logic related to the map
-
-            // Dodaj punkt do bazy danych Firebase
-            database.push().set({
-              'latitude': position.latitude,
-              'longitude': position.longitude,
-            }).then((_) {
-              // Po dodaniu punktu do bazy danych, dodaj go również do lokalnego zbioru _markers i odśwież mapę
-              addMarker(_markers, position);
-              setState(() {});
-            }).catchError((error) => print('Error: $error'));
-          },
         ),
-      ),
-    );
-  }
+        _selectedMarkerId != null ? _buildDeleteButton() : SizedBox(),
+      ],
+    ),
+  );
+}
 
   Widget _buildFloatingActionButtons(bool showFullscreenButton) {
     // Return a Column containing the SpeedDial button and conditionally the fullscreen button
@@ -251,12 +277,43 @@ void _showErrorSnackBar(String message) {
             backgroundColor: Colors.redAccent,
             onTap: () {
               LatLng position = LatLng(53.447242736816406, 14.492215156555176);
-              addMarker(_markers, position);
+              addMarker(_markers, position,"fakeId");
               setState(() {});
             })
       ],
     );
   }
+  //deleting button appears under the map!! need to be fixed
+  Widget _buildDeleteButton() {
+  return Positioned(
+    left: 20,
+    top: MediaQuery.of(context).padding.top +80,
+    child: FloatingActionButton(
+      onPressed: () {
+        if (_selectedMarkerId != null) {
+          removeMarker(_selectedMarkerId!);
+          _selectedMarkerId = null;
+          setState(() {});
+        }
+      },
+      child: Icon(Icons.delete),
+      backgroundColor: Colors.red,
+    ),
+  );
+}
+
+void removeMarker(String markerId) {
+  // Znajdź i usuń marker z lokalnego zbioru
+  _markers.removeWhere((marker) => marker.markerId.value == markerId);
+
+  // Usuń marker z bazy danych
+  database.child(markerId).remove().then((_) {
+    print("Marker removed from the database.");
+
+    // Odśwież mapę po usunięciu markera
+    setState(() {});
+  }).catchError((error) => print('Error: $error'));
+}
 
   Future<void> _determinePosition() async {
   bool serviceEnabled;
