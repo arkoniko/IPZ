@@ -261,24 +261,27 @@ class _MainPageState extends State<MainPage> {
 }
 }
 
-  void _setUserLocationMarker(Position position) {
-    LatLng userPosition = LatLng(position.latitude, position.longitude);
+  void _setUserLocationMarker(Position position) async {
+  LatLng userPosition = LatLng(position.latitude, position.longitude);
 
-    setState(() {
-      // Add a new marker to the map for the user's current position
-      _markers.add(Marker(
-        markerId: MarkerId(
-            userPosition.toString()), // Unique identifier for the marker
-        position: userPosition, // The location of the marker
-        infoWindow: InfoWindow(
-          title: 'Your Location',
-          snippet: 'Lat: ${position.latitude}, Lng: ${position.longitude}',
-        ),
-        icon: BitmapDescriptor.defaultMarker, // Default pin icon
-      ));
+  // Load the custom marker icon from assets
+  BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(size: Size(48, 48)), 'lib/images/pin.png');
 
-      // Optionally, move the camera to the user's current position
-      _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
-    });
-  }
+  setState(() {
+    // Add a new marker to the map for the user's current position
+    _markers.add(Marker(
+      markerId: MarkerId(userPosition.toString()),
+      position: userPosition,
+      infoWindow: InfoWindow(
+        title: 'Your Location',
+        snippet: 'Lat: ${position.latitude}, Lng: ${position.longitude}',
+      ),
+      icon: customIcon,
+    ));
+
+    // Optionally, move the camera to the user's current position
+    _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
+  });
+}
 }
