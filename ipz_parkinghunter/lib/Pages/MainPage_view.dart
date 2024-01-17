@@ -41,7 +41,7 @@ class _MainPageState extends State<MainPage> {
     _determinePosition();
   }
 
-   Future<void> loadMarkers() async {
+  Future<void> loadMarkers() async {
     database.onChildAdded.listen((event) {
       Map<dynamic, dynamic>? value = event.snapshot.value as Map?;
 
@@ -85,26 +85,26 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _goToUserLocation() async {
-  try {
-    Position position = await Geolocator.getCurrentPosition();
-    LatLng userPosition = LatLng(position.latitude, position.longitude);
-    _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
-  } catch (e) {
-    print('Failed to get current position: $e');
-    // Show a SnackBar with an error message
-    _showErrorSnackBar('Failed to get current position');
+    try {
+      Position position = await Geolocator.getCurrentPosition();
+      LatLng userPosition = LatLng(position.latitude, position.longitude);
+      _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
+    } catch (e) {
+      print('Failed to get current position: $e');
+      // Show a SnackBar with an error message
+      _showErrorSnackBar('Failed to get current position');
+    }
   }
-}
+
 //bar at the bottom of our site, saying whats wrong?
-void _showErrorSnackBar(String message) {
-  final snackBar = SnackBar(
-    content: Text(message),
-    duration: Duration(seconds: 3),
-  );
+  void _showErrorSnackBar(String message) {
+    final snackBar = SnackBar(
+      content: Text(message),
+      duration: Duration(seconds: 3),
+    );
 
-  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-}
-
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +128,7 @@ void _showErrorSnackBar(String message) {
       drawer: _isFullscreen ? null : BurgerMenu(),
       body: Stack(
         children: [
-          _buildGoogleMap(),  //removed context for now
+          _buildGoogleMap(), //removed context for now
           _buildZoomControls(), // Always show zoom controls
           _buildFloatingActionButtons(!_isFullscreen),
           if (_isFullscreen) _buildMinimizeButton(),
@@ -138,78 +138,80 @@ void _showErrorSnackBar(String message) {
   }
 
   Widget _buildZoomControls() {
-  return Positioned(
-    left: 20, // Adjust the position as needed
-    bottom: MediaQuery.of(context).size.height * 0.5, // Center on the left side
-    child: Column(
-      children: [
-        FloatingActionButton(
-          mini: true, // for smaller buttons
-          onPressed: _zoomIn,
-          child: Icon(Icons.add),
-          heroTag: 'zoomIn',
-        ),
-        SizedBox(height: 20), // Space between the buttons
-        FloatingActionButton(
-          mini: true, // for smaller buttons
-          onPressed: _zoomOut,
-          child: Icon(Icons.remove),
-          heroTag: 'zoomOut',
-        ),
-        SizedBox(height: 20), // Space between the buttons and the new button
-        FloatingActionButton(
-          mini: true,
-          onPressed: _goToUserLocation, // Add this callback
-          child: Icon(Icons.my_location),
-          heroTag: 'userLocation',
-        ),
-      ],
-    ),
-  );
-}
+    return Positioned(
+      left: 20, // Adjust the position as needed
+      bottom:
+          MediaQuery.of(context).size.height * 0.5, // Center on the left side
+      child: Column(
+        children: [
+          FloatingActionButton(
+            mini: true, // for smaller buttons
+            onPressed: _zoomIn,
+            child: Icon(Icons.add),
+            heroTag: 'zoomIn',
+          ),
+          SizedBox(height: 20), // Space between the buttons
+          FloatingActionButton(
+            mini: true, // for smaller buttons
+            onPressed: _zoomOut,
+            child: Icon(Icons.remove),
+            heroTag: 'zoomOut',
+          ),
+          SizedBox(height: 20), // Space between the buttons and the new button
+          FloatingActionButton(
+            mini: true,
+            onPressed: _goToUserLocation, // Add this callback
+            child: Icon(Icons.my_location),
+            heroTag: 'userLocation',
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildGoogleMap() {
-  return Positioned(
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: _isFullscreen ? 0 : MediaQuery.of(context).size.height * 0.4,
-    child: Column(
-      children: [
-        Expanded(
-          child: ClipRRect(
-            borderRadius: _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
-            child: GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: LatLng(53.447242736816406, 14.492215156555176),
-                zoom: 10,
-              ),
-              onMapCreated: (GoogleMapController controller) {
-                _mapController = controller;
-              },
-              markers: _markers,
-              onTap: (position) {
-                // Your logic related to the map
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: _isFullscreen ? 0 : MediaQuery.of(context).size.height * 0.4,
+      child: Column(
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius:
+                  _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
+              child: GoogleMap(
+                zoomControlsEnabled: false,
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(53.447242736816406, 14.492215156555176),
+                  zoom: 10,
+                ),
+                onMapCreated: (GoogleMapController controller) {
+                  _mapController = controller;
+                },
+                markers: _markers,
+                onTap: (position) {
+                  // Your logic related to the map
 
-                //add point to current map -> add point to database
-                DatabaseReference newMarkerRef = database.push();
-                newMarkerRef.set({
-                  'latitude': position.latitude,
-                  'longitude': position.longitude,
-                }).then((_) {
-                  
-                  addMarker(_markers, position, newMarkerRef.key!);
-                  setState(() {});
-                }).catchError((error) => print('Error: $error'));
-              },
+                  //add point to current map -> add point to database
+                  DatabaseReference newMarkerRef = database.push();
+                  newMarkerRef.set({
+                    'latitude': position.latitude,
+                    'longitude': position.longitude,
+                  }).then((_) {
+                    addMarker(_markers, position, newMarkerRef.key!);
+                    setState(() {});
+                  }).catchError((error) => print('Error: $error'));
+                },
+              ),
             ),
           ),
-        ),
-        _selectedMarkerId != null ? _buildDeleteButton() : SizedBox(),
-      ],
-    ),
-  );
-}
+          _selectedMarkerId != null ? _buildDeleteButton() : SizedBox(),
+        ],
+      ),
+    );
+  }
 
   Widget _buildFloatingActionButtons(bool showFullscreenButton) {
     // Return a Column containing the SpeedDial button and conditionally the fullscreen button
@@ -277,99 +279,100 @@ void _showErrorSnackBar(String message) {
             backgroundColor: Colors.redAccent,
             onTap: () {
               LatLng position = LatLng(53.447242736816406, 14.492215156555176);
-              addMarker(_markers, position,"fakeId");
+              addMarker(_markers, position, "fakeId");
               setState(() {});
             })
       ],
     );
   }
+
   //deleting button appears under the map!! need to be fixed
   Widget _buildDeleteButton() {
-  return Positioned(
-    left: 20,
-    top: MediaQuery.of(context).padding.top +80,
-    child: FloatingActionButton(
-      onPressed: () {
-        if (_selectedMarkerId != null) {
-          removeMarker(_selectedMarkerId!);
-          _selectedMarkerId = null;
-          setState(() {});
-        }
-      },
-      child: Icon(Icons.delete),
-      backgroundColor: Colors.red,
-    ),
-  );
-}
+    return Positioned(
+      left: 20,
+      top: MediaQuery.of(context).padding.top + 80,
+      child: FloatingActionButton(
+        onPressed: () {
+          if (_selectedMarkerId != null) {
+            removeMarker(_selectedMarkerId!);
+            _selectedMarkerId = null;
+            setState(() {});
+          }
+        },
+        child: Icon(Icons.delete),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 
-void removeMarker(String markerId) {
-  // Znajdź i usuń marker z lokalnego zbioru
-  _markers.removeWhere((marker) => marker.markerId.value == markerId);
+  void removeMarker(String markerId) {
+    // Znajdź i usuń marker z lokalnego zbioru
+    _markers.removeWhere((marker) => marker.markerId.value == markerId);
 
-  // Usuń marker z bazy danych
-  database.child(markerId).remove().then((_) {
-    print("Marker removed from the database.");
+    // Usuń marker z bazy danych
+    database.child(markerId).remove().then((_) {
+      print("Marker removed from the database.");
 
-    // Odśwież mapę po usunięciu markera
-    setState(() {});
-  }).catchError((error) => print('Error: $error'));
-}
+      // Odśwież mapę po usunięciu markera
+      setState(() {});
+    }).catchError((error) => print('Error: $error'));
+  }
 
   Future<void> _determinePosition() async {
-  bool serviceEnabled;
-  LocationPermission permission;
+    bool serviceEnabled;
+    LocationPermission permission;
 
-  serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  if (!serviceEnabled) {
-    print('Location services are disabled.');
-    return; // Optionally, handle this case by setting a default location
-  }
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      print('Location services are disabled.');
+      return; // Optionally, handle this case by setting a default location
+    }
 
-  permission = await Geolocator.checkPermission();
-  if (permission == LocationPermission.denied) {
-  permission = await Geolocator.requestPermission();
-  if (permission == LocationPermission.denied) {
-  print('Location permissions are denied');
-  return; // Optionally, handle this case by setting a default location
-  }
-  }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        print('Location permissions are denied');
+        return; // Optionally, handle this case by setting a default location
+      }
+    }
 
-  if (permission == LocationPermission.deniedForever) {
-  print('Location permissions are permanently denied');
-  return; // Optionally, handle this case by setting a default location
-  }
+    if (permission == LocationPermission.deniedForever) {
+      print('Location permissions are permanently denied');
+      return; // Optionally, handle this case by setting a default location
+    }
 
-  // When permissions are granted, get the current position
-  try {
-  Position position = await Geolocator.getCurrentPosition();
-  _setUserLocationMarker(position);
-  } catch (e) {
-  print('Failed to get current position: $e');
-  // Handle the error by setting a default location, or leave as is
-  }
+    // When permissions are granted, get the current position
+    try {
+      Position position = await Geolocator.getCurrentPosition();
+      _setUserLocationMarker(position);
+    } catch (e) {
+      print('Failed to get current position: $e');
+      // Handle the error by setting a default location, or leave as is
+    }
   }
 
   void _setUserLocationMarker(Position position) async {
-  LatLng userPosition = LatLng(position.latitude, position.longitude);
+    LatLng userPosition = LatLng(position.latitude, position.longitude);
 
-  // Load the custom marker icon from assets
-  BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(48, 48)), 'lib/images/car2.png');
+    // Load the custom marker icon from assets
+    BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+        ImageConfiguration(size: Size(48, 48)), 'lib/images/car2.png');
 
-  setState(() {
-    // Add a new marker to the map for the user's current position
-    _markers.add(Marker(
-      markerId: MarkerId(userPosition.toString()),
-      position: userPosition,
-      infoWindow: InfoWindow(
-        title: 'Your Location',
-        snippet: 'Lat: ${position.latitude}, Lng: ${position.longitude}',
-      ),
-      icon: customIcon,
-    ));
+    setState(() {
+      // Add a new marker to the map for the user's current position
+      _markers.add(Marker(
+        markerId: MarkerId(userPosition.toString()),
+        position: userPosition,
+        infoWindow: InfoWindow(
+          title: 'Your Location',
+          snippet: 'Lat: ${position.latitude}, Lng: ${position.longitude}',
+        ),
+        icon: customIcon,
+      ));
 
-    // Optionally, move the camera to the user's current position
-    _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
-  });
-}
+      // Optionally, move the camera to the user's current position
+      _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
+    });
+  }
 }
