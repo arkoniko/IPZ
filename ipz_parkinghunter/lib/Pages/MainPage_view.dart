@@ -322,9 +322,7 @@ class _MainPageState extends State<MainPage> {
             label: 'Wolne miejsce parkingowe',
             backgroundColor: Colors.greenAccent,
             onTap: () {
-              setState(() {
-                _addingFreeParking = true;
-              });
+                  addCurrentLocationAsFreeParking();
             }),
         SpeedDialChild(
           child:  Icon(Icons.event_busy_outlined),
@@ -477,5 +475,19 @@ Widget _buildFloatingActionButtons(bool showFullscreenButton) {
     ],
   );
 }
+
+void addCurrentLocationAsFreeParking() async {
+  try {
+    Position position = await Geolocator.getCurrentPosition();
+    LatLng userPosition = LatLng(position.latitude, position.longitude);
+    String markerId = 'freeParking_${DateTime.now().millisecondsSinceEpoch}'; // Unikalny identyfikator
+
+    addFreeParkingMarker(_markers, userPosition, markerId);
+  } catch (e) {
+    print('Error getting the current location: $e');
+    _showErrorSnackBar('Failed to get current position');
+  }
+}
+
 
 }
