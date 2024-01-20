@@ -1,11 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:ipz_parkinghunter/Pages/registration_view.dart';
 import 'package:ipz_parkinghunter/components/login_button.dart';
 import 'package:ipz_parkinghunter/components/login_password_boxes.dart';
 import 'package:ipz_parkinghunter/components/login_square_tile.dart';
 
-class LoginPage extends StatefulWidget
-{
+class LoginPage extends StatefulWidget {
   LoginPage({super.key});
 
   @override
@@ -18,21 +18,21 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
 
   // sign user in method
-  void SignUserIn() async{
+  void SignUserIn() async {
     // Loading circle
-    showDialog(context: context,
-               builder:(context) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-     }
-    );
+    showDialog(
+        context: context,
+        builder: (context) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        });
 
     // Signing in
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
-      email: emailController.text, 
-      password: passwordController.text,
+        email: emailController.text,
+        password: passwordController.text,
       );
 
       Navigator.pop(context);
@@ -40,35 +40,30 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.pop(context);
       // Wrong email or password
       // For now the if instruction does not working
-      if (e.code == 'user-not-found')
-      {
+      if (e.code == 'user-not-found') {
         wrongDataMessage();
-      }
-      else if(e.code == 'wrong-password')
-      {
+      } else if (e.code == 'wrong-password') {
         wrongPasswordMessage();
       }
     }
   }
 
-  void wrongDataMessage()
-  {
+  void wrongDataMessage() {
     showDialog(
-      context: context, 
-      builder: (context){
-       return const AlertDialog(
+      context: context,
+      builder: (context) {
+        return const AlertDialog(
           title: Text("Nieprawidlowe dane do logowania"),
         );
       },
     );
   }
 
-  void wrongPasswordMessage()
-  {
+  void wrongPasswordMessage() {
     showDialog(
-      context: context, 
-      builder: (context){
-       return const AlertDialog(
+      context: context,
+      builder: (context) {
+        return const AlertDialog(
           title: Text("Nieprawidlowe dane do logowania"),
         );
       },
@@ -76,31 +71,32 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
-  Widget build(BuildContext context)
-  {
+  Widget build(BuildContext context) {
     // Interface name user widget
-    return  Scaffold
-    (
+    return Scaffold(
       backgroundColor: const Color.fromARGB(247, 247, 247, 247),
       body: SafeArea(
         child: Center(
           child: Column(
             children: [
-               const SizedBox(height: 50),
+              const SizedBox(height: 50),
 
               // logo
-               const Icon(
+              const Icon(
                 Icons.account_circle_sharp,
                 size: 150,
-               ),
+              ),
 
-               const SizedBox(height: 50),
+              const SizedBox(height: 50),
 
-               // Welcome back notification 
-               const Text('Witaj z powrotem!',
-               style: TextStyle(color: Color.fromARGB(255, 107, 107, 107),
-               fontSize: 16,),
-               ),
+              // Welcome back notification
+              const Text(
+                'Witaj z powrotem!',
+                style: TextStyle(
+                  color: Color.fromARGB(255, 107, 107, 107),
+                  fontSize: 16,
+                ),
+              ),
 
               const SizedBox(height: 25),
 
@@ -110,9 +106,9 @@ class _LoginPageState extends State<LoginPage> {
                 hintText: 'Email',
                 obscureText: false,
               ),
-              
+
               const SizedBox(height: 10),
-              
+
               // Password texbox
               LoginTextField(
                 controller: passwordController,
@@ -127,12 +123,16 @@ class _LoginPageState extends State<LoginPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text('Zapomniales hasła?',
-                    style: TextStyle(color: Color.fromARGB(255, 107, 107, 107),),),
+                    Text(
+                      'Zapomniales hasła?',
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 107, 107, 107),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 25),
 
               LoginButton(
@@ -155,7 +155,8 @@ class _LoginPageState extends State<LoginPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 10.0),
                       child: Text(
                         'Lub zaloguj sie za pomoca',
-                        style: TextStyle(color: Color.fromARGB(255, 107, 107, 107)),
+                        style: TextStyle(
+                            color: Color.fromARGB(255, 107, 107, 107)),
                       ),
                     ),
                     Expanded(
@@ -170,37 +171,43 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 50),
 
-               Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // google button
-                 SquareTile(imagePath: 'lib/images/google.png'),
+                  SquareTile(imagePath: 'lib/images/google.png'),
 
-                 // apple button
-                 const SizedBox(width: 25),
+                  // apple button
+                  const SizedBox(width: 25),
 
-                 SquareTile(imagePath: 'lib/images/apple.png'),
+                  SquareTile(imagePath: 'lib/images/apple.png'),
                 ],
               ),
 
               const SizedBox(height: 50),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text('Nie masz konta?'),
-
-              const SizedBox(height: 50),
-                Text(' Zarejestruj się teraz!',
-                style: TextStyle(
-                  color: Colors.blue, fontWeight: FontWeight.bold),
+                const SizedBox(height: 50),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => RegistrationPage()),
+                    );
+                  },
+                  child: Text(
+                    ' Zarejestruj się teraz!',
+                    style: TextStyle(
+                        color: Colors.blue, fontWeight: FontWeight.bold),
                   ),
+                )
               ])
             ],
-            ),
+          ),
         ),
       ),
     );
-    
   }
-} 
+}
