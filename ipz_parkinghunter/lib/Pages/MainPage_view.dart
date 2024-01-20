@@ -38,18 +38,23 @@ class _MainPageState extends State<MainPage> {
   }
 
   Future<void> loadMarkers() async {
-    database.onChildAdded.listen((event) {
-      Map<dynamic, dynamic>? value = event.snapshot.value as Map?;
+  database.onChildAdded.listen((event) {
+    Map<dynamic, dynamic>? value = event.snapshot.value as Map?;
 
-      if (value != null) {
-        double latitude = value['latitude'];
-        double longitude = value['longitude'];
-        LatLng position = LatLng(latitude, longitude);
+    if (value != null) {
+      double latitude = value['latitude'];
+      double longitude = value['longitude'];
+      bool isFreeParking = value['isFreeParking'] ?? false;
+      LatLng position = LatLng(latitude, longitude);
+      if (isFreeParking) {
+        addFreeParkingMarker(_markers, position, event.snapshot.key!);
+      } else {
         addMarker(_markers, position, event.snapshot.key!);
-        setState(() {});
       }
-    });
-  }
+      setState(() {});
+    }
+  });
+}
 
   void addMarker(Set<Marker> markers, LatLng position, String markerId) {
     markers.add(
@@ -79,15 +84,27 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _goToUserLocation() async {
-    try {
-      Position position = await Geolocator.getCurrentPosition();
-      LatLng userPosition = LatLng(position.latitude, position.longitude);
+  try {
+    Position position = await Geolocator.getCurrentPosition();
+    LatLng userPosition = LatLng(position.latitude, position.longitude);
+
+    Marker userLocationMarker = Marker(
+      markerId: MarkerId('userLocation'),
+      position: userPosition,
+      infoWindow: InfoWindow(title: 'Twoja lokalizacja'),
+      icon: BitmapDescriptor.defaultMarker,
+    );
+
+    setState(() {
+      _markers.add(userLocationMarker);
       _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
-    } catch (e) {
-      print('Failed to get current position: $e');
-      _showErrorSnackBar('Failed to get current position');
-    }
+    });
+  } catch (e) {
+    print('Failed to get current position: $e');
+    _showErrorSnackBar('Failed to get current position');
   }
+}
+
 
   void _showErrorSnackBar(String message) {
     final snackBar = SnackBar(
@@ -210,6 +227,35 @@ class _MainPageState extends State<MainPage> {
               borderRadius:
                   _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
               child: GoogleMap(
+                zoomControlsEnabled: false,
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(53.447242736816406, 14.492215156555176),
+                  zoom: 10,
+                ),
+                onMapCreated: (GoogleMapController controller) {
+                  _mapController = controller;
+                },
+                markers: _markers,
+                onTap: (position) {
+                        DatabaseReference newMarkerRef = database.push();
+                        newMarkerRef.set({
+                          'latitude': position.latitude,
+                          'longitude': position.longitude,
+                          'isFreeParking': _addingFreeParking
+                        }).then((_) {
+                          if (_addingFreeParking) {
+                            addFreeParkingMarker(_markers, position, newMarkerRef.key!);
+                          } else {
+                            addMarker(_markers, position, newMarkerRef.key!);
+                          }
+                          setState(() {});
+                        }).catchError((error) => print('Error: $error'));
+                      },
+
+                onLongPress: (LatLng position){
+                  addCustomMarker(position);
+                }
+              ),
                   zoomControlsEnabled: false,
                   initialCameraPosition: CameraPosition(
                     target: LatLng(53.447242736816406, 14.492215156555176),
@@ -246,20 +292,18 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget _buildFloatingActionButtons(bool showFullscreenButton) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        if (_isFullscreen) _buildMinimizeButton(),
-        _buildToggleFreeParkingButton(),
-        _buildSpeedDial(),
-        if (showFullscreenButton) ...[
-          SizedBox(height: 20),
-          _buildFullscreenButton(),
-        ],
-      ],
-    );
-  }
+  Widget _buildToggleFreeParkingButton() {
+  return FloatingActionButton(
+    onPressed: () {
+      setState(() {
+        _addingFreeParking = !_addingFreeParking;
+      });
+    },
+    child: Icon(_addingFreeParking ? Icons.local_parking : Icons.car_repair),
+    backgroundColor: _addingFreeParking ? Colors.green : Colors.red,
+  );
+}
+
 
   Widget _buildFullscreenButton() {
     return FloatingActionButton(
@@ -302,12 +346,18 @@ class _MainPageState extends State<MainPage> {
         SpeedDialChild(
             child: Icon(Icons.gps_fixed_rounded),
             label: 'Wolne miejsce parkingowe',
-            backgroundColor: Colors.redAccent,
+            backgroundColor: Colors.greenAccent,
             onTap: () {
-              setState(() {
-                _addingFreeParking = true;
-              });
-            })
+                  addCurrentLocationAsFreeParking();
+            }),
+        SpeedDialChild(
+          child:  Icon(Icons.event_busy_outlined),
+          label: 'Zajete miejsce parkingowe',
+          backgroundColor: Colors.redAccent,
+          onTap: () {
+                  addCurrentLocationAsOccupiedParking();
+            }
+        )
       ],
     );
   }
@@ -327,18 +377,6 @@ class _MainPageState extends State<MainPage> {
       },
       child: Icon(Icons.delete),
       backgroundColor: Colors.red,
-    );
-  }
-
-  Widget _buildToggleFreeParkingButton() {
-    return FloatingActionButton(
-      onPressed: () {
-        setState(() {
-          _addingFreeParking = !_addingFreeParking;
-        });
-      },
-      child: Icon(_addingFreeParking ? Icons.cancel : Icons.add),
-      backgroundColor: _addingFreeParking ? Colors.red : Colors.green,
     );
   }
 
@@ -412,4 +450,81 @@ class _MainPageState extends State<MainPage> {
       _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
     });
   }
+
+  void addFreeParkingMarker(Set<Marker> markers, LatLng position, String markerId) async {
+  try {
+    // Załaduj niestandardową ikonę znacznika z zasobów aplikacji
+    BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(size: Size(48, 48)),
+      'lib/images/marker_green.png', // Ścieżka do niestandardowej ikony znacznika
+    );
+
+    // Dodaj znacznik z niestandardową ikoną do zestawu znaczników
+    markers.add(
+      Marker(
+        markerId: MarkerId(markerId),
+        position: position,
+        infoWindow: InfoWindow(
+          title: 'Wolne miejsce parkingowe',
+        ),
+        icon: customIcon,
+        onTap: () {
+          setState(() {
+            _selectedMarkerId = markerId;
+          });
+          print("Selected marker ID: $_selectedMarkerId");
+        },
+      ),
+    );
+    setState(() {}); // Odśwież stan, aby zaktualizować UI
+  } catch (e) {
+    print('Error loading custom marker icon: $e');
+    // Obsłuż błąd, np. pokazując domyślny znacznik lub rejestrując błąd
+  }
+}
+
+
+Widget _buildFloatingActionButtons(bool showFullscreenButton) {
+  return Column(
+    mainAxisAlignment: MainAxisAlignment.end,
+    children: [
+      if (_isFullscreen) _buildMinimizeButton(),
+      _buildToggleFreeParkingButton(),
+      _buildSpeedDial(),
+      if (showFullscreenButton) ...[
+        SizedBox(height: 20),
+        _buildFullscreenButton(),
+      ],
+    ],
+  );
+}
+
+void addCurrentLocationAsFreeParking() async {
+  try {
+    Position position = await Geolocator.getCurrentPosition();
+    LatLng userPosition = LatLng(position.latitude, position.longitude);
+    String markerId = 'freeParking_${DateTime.now().millisecondsSinceEpoch}'; // Unikalny identyfikator
+
+    addFreeParkingMarker(_markers, userPosition, markerId);
+  } catch (e) {
+    print('Error getting the current location: $e');
+    _showErrorSnackBar('Failed to get current position');
+  }
+}
+
+void addCurrentLocationAsOccupiedParking() async {
+  try {
+    Position position = await Geolocator.getCurrentPosition();
+    LatLng userPosition = LatLng(position.latitude, position.longitude);
+    String markerId = 'occupiedParking_${DateTime.now().millisecondsSinceEpoch}'; // Unikalny identyfikator
+
+    addMarker(_markers, userPosition, markerId);
+  } catch (e) {
+    print('Error getting the current location: $e');
+    _showErrorSnackBar('Failed to get current position');
+  }
+}
+
+
+
 }
