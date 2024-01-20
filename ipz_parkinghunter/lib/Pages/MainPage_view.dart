@@ -329,9 +329,7 @@ class _MainPageState extends State<MainPage> {
           label: 'Zajete miejsce parkingowe',
           backgroundColor: Colors.redAccent,
           onTap: () {
-              setState(() {
-                _addingFreeParking = true;
-              });
+                  addCurrentLocationAsOccupiedParking();
             }
         )
       ],
@@ -488,6 +486,20 @@ void addCurrentLocationAsFreeParking() async {
     _showErrorSnackBar('Failed to get current position');
   }
 }
+
+void addCurrentLocationAsOccupiedParking() async {
+  try {
+    Position position = await Geolocator.getCurrentPosition();
+    LatLng userPosition = LatLng(position.latitude, position.longitude);
+    String markerId = 'occupiedParking_${DateTime.now().millisecondsSinceEpoch}'; // Unikalny identyfikator
+
+    addMarker(_markers, userPosition, markerId);
+  } catch (e) {
+    print('Error getting the current location: $e');
+    _showErrorSnackBar('Failed to get current position');
+  }
+}
+
 
 
 }
