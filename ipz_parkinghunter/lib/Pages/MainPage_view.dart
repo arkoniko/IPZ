@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:ipz_parkinghunter/components/map_waypoint.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:ipz_parkinghunter/Pages/BurgerMenu.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:geolocator/geolocator.dart';
-
-//add marker and remove marker are in this file, need to be reorganised in future
-//also check Widget _builddeletebutton right now
 
 class MainPage extends StatefulWidget {
   @override
@@ -15,7 +11,6 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  //create database refevrence
   final DatabaseReference database = FirebaseDatabase(
     databaseURL:
         'https://ipzparkinghunter-30f5b-default-rtdb.europe-west1.firebasedatabase.app/',
@@ -23,14 +18,15 @@ class _MainPageState extends State<MainPage> {
 
   late GoogleMapController _mapController;
   Set<Marker> _markers = {};
-  bool _isFullscreen = false; // State variable for fullscreen mode
+  bool _isFullscreen = false;
   ValueNotifier<bool> isDialOpen = ValueNotifier(false);
-  String? _selectedMarkerId; // selected waypoint id
+  String? _selectedMarkerId;
+
+  bool _addingFreeParking = false;
 
   void _toggleFullscreen() {
     setState(() {
       _isFullscreen = !_isFullscreen;
-      // Your logic after state change
     });
   }
 
@@ -74,12 +70,10 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  // Method to zoom in the map
   void _zoomIn() {
     _mapController.animateCamera(CameraUpdate.zoomIn());
   }
 
-  // Method to zoom out the map
   void _zoomOut() {
     _mapController.animateCamera(CameraUpdate.zoomOut());
   }
@@ -91,12 +85,10 @@ class _MainPageState extends State<MainPage> {
       _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
     } catch (e) {
       print('Failed to get current position: $e');
-      // Show a SnackBar with an error message
       _showErrorSnackBar('Failed to get current position');
     }
   }
 
-//bar at the bottom of our site, saying whats wrong?
   void _showErrorSnackBar(String message) {
     final snackBar = SnackBar(
       content: Text(message),
@@ -116,7 +108,7 @@ class _MainPageState extends State<MainPage> {
               elevation: 0.0,
               backgroundColor: Color.fromARGB(247, 15, 101, 158),
               title: Text(
-                'version 1.1.0',
+                'version 1.1.5',
                 style: TextStyle(
                   fontFamily: 'Arial',
                   color: Colors.white,
@@ -128,39 +120,38 @@ class _MainPageState extends State<MainPage> {
       drawer: _isFullscreen ? null : BurgerMenu(),
       body: Stack(
         children: [
-          _buildGoogleMap(), //removed context for now
-          _buildZoomControls(), // Always show zoom controls
-          _buildFloatingActionButtons(!_isFullscreen),
-          if (_isFullscreen) _buildMinimizeButton(),
+          _buildGoogleMap(),
+          _buildZoomControls(),
         ],
       ),
+      floatingActionButton: _buildFloatingActionButtons(!_isFullscreen),
     );
   }
 
+
   Widget _buildZoomControls() {
     return Positioned(
-      left: 20, // Adjust the position as needed
-      bottom:
-          MediaQuery.of(context).size.height * 0.5, // Center on the left side
+      left: 20,
+      bottom: MediaQuery.of(context).size.height * 0.5,
       child: Column(
         children: [
           FloatingActionButton(
-            mini: true, // for smaller buttons
+            mini: true,
             onPressed: _zoomIn,
             child: Icon(Icons.add),
             heroTag: 'zoomIn',
           ),
-          SizedBox(height: 20), // Space between the buttons
+          SizedBox(height: 20),
           FloatingActionButton(
-            mini: true, // for smaller buttons
+            mini: true,
             onPressed: _zoomOut,
             child: Icon(Icons.remove),
             heroTag: 'zoomOut',
           ),
-          SizedBox(height: 20), // Space between the buttons and the new button
+          SizedBox(height: 20),
           FloatingActionButton(
             mini: true,
-            onPressed: _goToUserLocation, // Add this callback
+            onPressed: _goToUserLocation,
             child: Icon(Icons.my_location),
             heroTag: 'userLocation',
           ),
@@ -179,8 +170,9 @@ class _MainPageState extends State<MainPage> {
         children: [
           Expanded(
             child: ClipRRect(
-              borderRadius:
-                  _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
+              borderRadius: _isFullscreen
+                  ? BorderRadius.zero
+                  : BorderRadius.circular(20),
               child: GoogleMap(
                 zoomControlsEnabled: false,
                 initialCameraPosition: CameraPosition(
@@ -192,17 +184,20 @@ class _MainPageState extends State<MainPage> {
                 },
                 markers: _markers,
                 onTap: (position) {
-                  // Your logic related to the map
+                  if (_addingFreeParking) {
+                    DatabaseReference newMarkerRef = database.push();
+                    newMarkerRef.set({
+                      'latitude': position.latitude,
+                      'longitude': position.longitude,
+                    }).then((_) {
+                      addMarker(_markers, position, newMarkerRef.key!);
+                      setState(() {});
+                    }).catchError((error) => print('Error: $error'));
 
-                  //add point to current map -> add point to database
-                  DatabaseReference newMarkerRef = database.push();
-                  newMarkerRef.set({
-                    'latitude': position.latitude,
-                    'longitude': position.longitude,
-                  }).then((_) {
-                    addMarker(_markers, position, newMarkerRef.key!);
-                    setState(() {});
-                  }).catchError((error) => print('Error: $error'));
+                    setState(() {
+                      _addingFreeParking = false;
+                    });
+                  }
                 },
               ),
             ),
@@ -214,31 +209,24 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildFloatingActionButtons(bool showFullscreenButton) {
-    // Return a Column containing the SpeedDial button and conditionally the fullscreen button
-    return Positioned(
-      right: 20,
-      bottom: MediaQuery.of(context).padding.bottom + 20,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          _buildSpeedDial(),
-          if (showFullscreenButton) ...[
-            SizedBox(height: 20), // Spacing between buttons, adjust as needed
-            _buildFullscreenButton(),
-          ],
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (_isFullscreen) _buildMinimizeButton(),
+        _buildToggleFreeParkingButton(),
+        _buildSpeedDial(),
+        if (showFullscreenButton) ...[
+          SizedBox(height: 20),
+          _buildFullscreenButton(),
         ],
-      ),
+      ],
     );
   }
 
   Widget _buildFullscreenButton() {
-    return Positioned(
-      left: 20,
-      bottom: MediaQuery.of(context).padding.bottom + 20,
-      child: FloatingActionButton(
-        onPressed: _toggleFullscreen,
-        child: Icon(Icons.fullscreen),
-      ),
+    return FloatingActionButton(
+      onPressed: _toggleFullscreen,
+      child: Icon(Icons.fullscreen),
     );
   }
 
@@ -278,45 +266,52 @@ class _MainPageState extends State<MainPage> {
             label: 'Wolne miejsce parkingowe',
             backgroundColor: Colors.redAccent,
             onTap: () {
-              LatLng position = LatLng(53.447242736816406, 14.492215156555176);
-              addMarker(_markers, position, "fakeId");
-              setState(() {});
+              setState(() {
+                _addingFreeParking = true;
+              });
             })
       ],
     );
   }
 
-  //deleting button appears under the map!! need to be fixed
   Widget _buildDeleteButton() {
-    return Positioned(
-      left: 20,
-      top: MediaQuery.of(context).padding.top + 80,
-      child: FloatingActionButton(
-        onPressed: () {
-          if (_selectedMarkerId != null) {
-            removeMarker(_selectedMarkerId!);
-            _selectedMarkerId = null;
-            setState(() {});
-          }
-        },
-        child: Icon(Icons.delete),
-        backgroundColor: Colors.red,
-      ),
+    return FloatingActionButton(
+      onPressed: () {
+        if (_selectedMarkerId != null) {
+          removeMarker(_selectedMarkerId!);
+          _selectedMarkerId = null;
+          setState(() {});
+        }
+      },
+      child: Icon(Icons.delete),
+      backgroundColor: Colors.red,
+    );
+  }
+
+  Widget _buildToggleFreeParkingButton() {
+    return FloatingActionButton(
+      onPressed: () {
+        setState(() {
+          _addingFreeParking = !_addingFreeParking;
+        });
+      },
+      child: Icon(_addingFreeParking ? Icons.cancel : Icons.add),
+      backgroundColor: _addingFreeParking ? Colors.red : Colors.green,
     );
   }
 
   void removeMarker(String markerId) {
-    // Znajdź i usuń marker z lokalnego zbioru
-    _markers.removeWhere((marker) => marker.markerId.value == markerId);
-
-    // Usuń marker z bazy danych
-    database.child(markerId).remove().then((_) {
-      print("Marker removed from the database.");
-
-      // Odśwież mapę po usunięciu markera
-      setState(() {});
-    }).catchError((error) => print('Error: $error'));
-  }
+  // Remove the marker locally
+  _markers.removeWhere((marker) => marker.markerId.value == markerId);
+  // Remove the marker from the Firebase Realtime Database
+  database.child(markerId).remove().then((_) {
+    print("Marker removed from the database.");
+    setState(() {
+      // Trigger a refresh to update the markers on all devices
+      loadMarkers();
+    });
+  }).catchError((error) => print('Error: $error'));
+}
 
   Future<void> _determinePosition() async {
     bool serviceEnabled;
@@ -325,7 +320,7 @@ class _MainPageState extends State<MainPage> {
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       print('Location services are disabled.');
-      return; // Optionally, handle this case by setting a default location
+      return;
     }
 
     permission = await Geolocator.checkPermission();
@@ -333,34 +328,30 @@ class _MainPageState extends State<MainPage> {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         print('Location permissions are denied');
-        return; // Optionally, handle this case by setting a default location
+        return;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
       print('Location permissions are permanently denied');
-      return; // Optionally, handle this case by setting a default location
+      return;
     }
 
-    // When permissions are granted, get the current position
     try {
       Position position = await Geolocator.getCurrentPosition();
       _setUserLocationMarker(position);
     } catch (e) {
       print('Failed to get current position: $e');
-      // Handle the error by setting a default location, or leave as is
     }
   }
 
   void _setUserLocationMarker(Position position) async {
     LatLng userPosition = LatLng(position.latitude, position.longitude);
 
-    // Load the custom marker icon from assets
     BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
         ImageConfiguration(size: Size(48, 48)), 'lib/images/car2.png');
 
     setState(() {
-      // Add a new marker to the map for the user's current position
       _markers.add(Marker(
         markerId: MarkerId(userPosition.toString()),
         position: userPosition,
@@ -371,7 +362,6 @@ class _MainPageState extends State<MainPage> {
         icon: customIcon,
       ));
 
-      // Optionally, move the camera to the user's current position
       _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
     });
   }
