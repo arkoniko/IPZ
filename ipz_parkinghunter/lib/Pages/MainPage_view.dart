@@ -98,6 +98,44 @@ class _MainPageState extends State<MainPage> {
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
+  void addCustomMarker(LatLng position) async {
+  try {
+    // Load the custom marker icon from assets
+    BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(size: Size(48, 48)),
+      'lib/images/marker_green.png', // Adjust the path to your custom icon
+    );
+
+    // Add the custom marker to the set of markers
+    _markers.add(
+      Marker(
+        markerId: MarkerId(position.toString()),
+        position: position,
+        infoWindow: InfoWindow(
+          title: 'Miejsce wolne',
+          snippet: '*tbd*',
+        ),
+        icon: customIcon,
+        onTap: () {
+          // Set the selected marker ID when the marker is tapped
+          setState(() {
+            _selectedMarkerId = position.toString();
+          });
+          print("Selected marker ID: $_selectedMarkerId");
+        },
+      ),
+    );
+
+    // Optionally, move the camera to the long-pressed position
+    _mapController.animateCamera(CameraUpdate.newLatLng(position));
+
+    setState(() {});
+  } catch (e) {
+    print('Error loading custom marker icon: $e');
+    // Handle the error, for example, show a default marker or log the error.
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -199,6 +237,9 @@ class _MainPageState extends State<MainPage> {
                     });
                   }
                 },
+                onLongPress: (LatLng position){
+                  addCustomMarker(position);
+                }
               ),
             ),
           ),
@@ -278,7 +319,13 @@ class _MainPageState extends State<MainPage> {
     return FloatingActionButton(
       onPressed: () {
         if (_selectedMarkerId != null) {
+          if(_selectedMarkerId!.startsWith("LatLng")){
+            removeCustomMarker(_selectedMarkerId!);
+
+          }
+          else {
           removeMarker(_selectedMarkerId!);
+          }
           _selectedMarkerId = null;
           setState(() {});
         }
@@ -312,6 +359,10 @@ class _MainPageState extends State<MainPage> {
     });
   }).catchError((error) => print('Error: $error'));
 }
+void removeCustomMarker(String markerId) {
+  _markers.removeWhere((marker) => marker.markerId.value == markerId);
+  setState(() {});
+  }
 
   Future<void> _determinePosition() async {
     bool serviceEnabled;
@@ -349,7 +400,7 @@ class _MainPageState extends State<MainPage> {
     LatLng userPosition = LatLng(position.latitude, position.longitude);
 
     BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
-        ImageConfiguration(size: Size(48, 48)), 'lib/images/car2.png');
+        ImageConfiguration(size: Size(48, 48)), 'lib/images/pingarrow.png');
 
     setState(() {
       _markers.add(Marker(
