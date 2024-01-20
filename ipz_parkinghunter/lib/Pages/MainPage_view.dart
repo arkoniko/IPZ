@@ -308,12 +308,22 @@ class _MainPageState extends State<MainPage> {
         SpeedDialChild(
             child: Icon(Icons.gps_fixed_rounded),
             label: 'Wolne miejsce parkingowe',
-            backgroundColor: Colors.redAccent,
+            backgroundColor: Colors.greenAccent,
             onTap: () {
               setState(() {
                 _addingFreeParking = true;
               });
-            })
+            }),
+        SpeedDialChild(
+          child:  Icon(Icons.event_busy_outlined),
+          label: 'Zajete miejsce parkingowe',
+          backgroundColor: Colors.redAccent,
+          onTap: () {
+              setState(() {
+                _addingFreeParking = true;
+              });
+            }
+        )
       ],
     );
   }
