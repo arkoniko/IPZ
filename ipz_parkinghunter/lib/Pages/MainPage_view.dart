@@ -301,13 +301,17 @@ class _MainPageState extends State<MainPage> {
   }
 
   void removeMarker(String markerId) {
-    _markers.removeWhere((marker) => marker.markerId.value == markerId);
-
-    database.child(markerId).remove().then((_) {
-      print("Marker removed from the database.");
-      setState(() {});
-    }).catchError((error) => print('Error: $error'));
-  }
+  // Remove the marker locally
+  _markers.removeWhere((marker) => marker.markerId.value == markerId);
+  // Remove the marker from the Firebase Realtime Database
+  database.child(markerId).remove().then((_) {
+    print("Marker removed from the database.");
+    setState(() {
+      // Trigger a refresh to update the markers on all devices
+      loadMarkers();
+    });
+  }).catchError((error) => print('Error: $error'));
+}
 
   Future<void> _determinePosition() async {
     bool serviceEnabled;
