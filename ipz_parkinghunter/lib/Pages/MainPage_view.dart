@@ -84,15 +84,27 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _goToUserLocation() async {
-    try {
-      Position position = await Geolocator.getCurrentPosition();
-      LatLng userPosition = LatLng(position.latitude, position.longitude);
+  try {
+    Position position = await Geolocator.getCurrentPosition();
+    LatLng userPosition = LatLng(position.latitude, position.longitude);
+
+    Marker userLocationMarker = Marker(
+      markerId: MarkerId('userLocation'),
+      position: userPosition,
+      infoWindow: InfoWindow(title: 'Twoja lokalizacja'),
+      icon: BitmapDescriptor.defaultMarker,
+    );
+
+    setState(() {
+      _markers.add(userLocationMarker);
       _mapController.animateCamera(CameraUpdate.newLatLng(userPosition));
-    } catch (e) {
-      print('Failed to get current position: $e');
-      _showErrorSnackBar('Failed to get current position');
-    }
+    });
+  } catch (e) {
+    print('Failed to get current position: $e');
+    _showErrorSnackBar('Failed to get current position');
   }
+}
+
 
   void _showErrorSnackBar(String message) {
     final snackBar = SnackBar(
