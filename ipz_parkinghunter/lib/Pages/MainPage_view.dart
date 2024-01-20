@@ -99,42 +99,42 @@ class _MainPageState extends State<MainPage> {
   }
 
   void addCustomMarker(LatLng position) async {
-  try {
-    // Load the custom marker icon from assets
-    BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
-      ImageConfiguration(size: Size(48, 48)),
-      'lib/images/marker_green.png', // Adjust the path to your custom icon
-    );
+    try {
+      // Load the custom marker icon from assets
+      BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+        ImageConfiguration(size: Size(48, 48)),
+        'lib/images/marker_green.png', // Adjust the path to your custom icon
+      );
 
-    // Add the custom marker to the set of markers
-    _markers.add(
-      Marker(
-        markerId: MarkerId(position.toString()),
-        position: position,
-        infoWindow: InfoWindow(
-          title: 'Miejsce wolne',
-          snippet: '*tbd*',
+      // Add the custom marker to the set of markers
+      _markers.add(
+        Marker(
+          markerId: MarkerId(position.toString()),
+          position: position,
+          infoWindow: InfoWindow(
+            title: 'Miejsce wolne',
+            snippet: '*tbd*',
+          ),
+          icon: customIcon,
+          onTap: () {
+            // Set the selected marker ID when the marker is tapped
+            setState(() {
+              _selectedMarkerId = position.toString();
+            });
+            print("Selected marker ID: $_selectedMarkerId");
+          },
         ),
-        icon: customIcon,
-        onTap: () {
-          // Set the selected marker ID when the marker is tapped
-          setState(() {
-            _selectedMarkerId = position.toString();
-          });
-          print("Selected marker ID: $_selectedMarkerId");
-        },
-      ),
-    );
+      );
 
-    // Optionally, move the camera to the long-pressed position
-    _mapController.animateCamera(CameraUpdate.newLatLng(position));
+      // Optionally, move the camera to the long-pressed position
+      _mapController.animateCamera(CameraUpdate.newLatLng(position));
 
-    setState(() {});
-  } catch (e) {
-    print('Error loading custom marker icon: $e');
-    // Handle the error, for example, show a default marker or log the error.
+      setState(() {});
+    } catch (e) {
+      print('Error loading custom marker icon: $e');
+      // Handle the error, for example, show a default marker or log the error.
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +146,7 @@ class _MainPageState extends State<MainPage> {
               elevation: 0.0,
               backgroundColor: Color.fromARGB(247, 15, 101, 158),
               title: Text(
-                'version 1.1.5',
+                'version 1.1.6',
                 style: TextStyle(
                   fontFamily: 'Arial',
                   color: Colors.white,
@@ -165,7 +165,6 @@ class _MainPageState extends State<MainPage> {
       floatingActionButton: _buildFloatingActionButtons(!_isFullscreen),
     );
   }
-
 
   Widget _buildZoomControls() {
     return Positioned(
@@ -208,39 +207,37 @@ class _MainPageState extends State<MainPage> {
         children: [
           Expanded(
             child: ClipRRect(
-              borderRadius: _isFullscreen
-                  ? BorderRadius.zero
-                  : BorderRadius.circular(20),
+              borderRadius:
+                  _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
               child: GoogleMap(
-                zoomControlsEnabled: false,
-                initialCameraPosition: CameraPosition(
-                  target: LatLng(53.447242736816406, 14.492215156555176),
-                  zoom: 10,
-                ),
-                onMapCreated: (GoogleMapController controller) {
-                  _mapController = controller;
-                },
-                markers: _markers,
-                onTap: (position) {
-                  if (_addingFreeParking) {
-                    DatabaseReference newMarkerRef = database.push();
-                    newMarkerRef.set({
-                      'latitude': position.latitude,
-                      'longitude': position.longitude,
-                    }).then((_) {
-                      addMarker(_markers, position, newMarkerRef.key!);
-                      setState(() {});
-                    }).catchError((error) => print('Error: $error'));
+                  zoomControlsEnabled: false,
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(53.447242736816406, 14.492215156555176),
+                    zoom: 10,
+                  ),
+                  onMapCreated: (GoogleMapController controller) {
+                    _mapController = controller;
+                  },
+                  markers: _markers,
+                  onTap: (position) {
+                    if (_addingFreeParking) {
+                      DatabaseReference newMarkerRef = database.push();
+                      newMarkerRef.set({
+                        'latitude': position.latitude,
+                        'longitude': position.longitude,
+                      }).then((_) {
+                        addMarker(_markers, position, newMarkerRef.key!);
+                        setState(() {});
+                      }).catchError((error) => print('Error: $error'));
 
-                    setState(() {
-                      _addingFreeParking = false;
-                    });
-                  }
-                },
-                onLongPress: (LatLng position){
-                  addCustomMarker(position);
-                }
-              ),
+                      setState(() {
+                        _addingFreeParking = false;
+                      });
+                    }
+                  },
+                  onLongPress: (LatLng position) {
+                    addCustomMarker(position);
+                  }),
             ),
           ),
           _selectedMarkerId != null ? _buildDeleteButton() : SizedBox(),
@@ -319,12 +316,10 @@ class _MainPageState extends State<MainPage> {
     return FloatingActionButton(
       onPressed: () {
         if (_selectedMarkerId != null) {
-          if(_selectedMarkerId!.startsWith("LatLng")){
+          if (_selectedMarkerId!.startsWith("LatLng")) {
             removeCustomMarker(_selectedMarkerId!);
-
-          }
-          else {
-          removeMarker(_selectedMarkerId!);
+          } else {
+            removeMarker(_selectedMarkerId!);
           }
           _selectedMarkerId = null;
           setState(() {});
@@ -348,20 +343,21 @@ class _MainPageState extends State<MainPage> {
   }
 
   void removeMarker(String markerId) {
-  // Remove the marker locally
-  _markers.removeWhere((marker) => marker.markerId.value == markerId);
-  // Remove the marker from the Firebase Realtime Database
-  database.child(markerId).remove().then((_) {
-    print("Marker removed from the database.");
-    setState(() {
-      // Trigger a refresh to update the markers on all devices
-      loadMarkers();
-    });
-  }).catchError((error) => print('Error: $error'));
-}
-void removeCustomMarker(String markerId) {
-  _markers.removeWhere((marker) => marker.markerId.value == markerId);
-  setState(() {});
+    // Remove the marker locally
+    _markers.removeWhere((marker) => marker.markerId.value == markerId);
+    // Remove the marker from the Firebase Realtime Database
+    database.child(markerId).remove().then((_) {
+      print("Marker removed from the database.");
+      setState(() {
+        // Trigger a refresh to update the markers on all devices
+        loadMarkers();
+      });
+    }).catchError((error) => print('Error: $error'));
+  }
+
+  void removeCustomMarker(String markerId) {
+    _markers.removeWhere((marker) => marker.markerId.value == markerId);
+    setState(() {});
   }
 
   Future<void> _determinePosition() async {
