@@ -105,7 +105,6 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-
   void _showErrorSnackBar(String message) {
     final snackBar = SnackBar(
       content: Text(message),
@@ -263,7 +262,6 @@ class _MainPageState extends State<MainPage> {
     ),
   );
 }
-
 
   Widget _buildToggleFreeParkingButton() {
   return FloatingActionButton(
@@ -455,15 +453,57 @@ class _MainPageState extends State<MainPage> {
     // Obsłuż błąd, np. pokazując domyślny znacznik lub rejestrując błąd
   }
 }
+void toggleParkingSpotStatus() async {
+  if (_selectedMarkerId != null) {
+    database.child(_selectedMarkerId!).once().then((DatabaseEvent event) {
+      if (event.snapshot.value != null) {
+        Map<dynamic, dynamic> markerData = event.snapshot.value as Map<dynamic, dynamic>;
+        LatLng position = LatLng(markerData['latitude'], markerData['longitude']);
+        bool isCurrentlyFree = markerData['isFreeParking'];
 
+        database.child(_selectedMarkerId!).update({
+          'isFreeParking': !isCurrentlyFree,
+        }).then((_) {
+          _markers.removeWhere((marker) => marker.markerId.value == _selectedMarkerId);
+          if (!isCurrentlyFree) {
+            addFreeParkingMarker(_markers, position, _selectedMarkerId!);
+          } else {
+            addMarker(_markers, position, _selectedMarkerId!);
+          }
+          setState(() {});
+        });
+      }
+    }).catchError((error) {
+      print('Error updating marker: $error');
+      _showErrorSnackBar('Failed to update marker');
+    });
+  }
+}
+
+Widget _buildToggleParkingSpotStatusButton() {
+  return FloatingActionButton(
+    onPressed: toggleParkingSpotStatus,
+    child: Icon(Icons.swap_horiz),
+    backgroundColor: Colors.blue,
+  );
+}
 
 Widget _buildFloatingActionButtons(bool showFullscreenButton) {
   return Column(
     mainAxisAlignment: MainAxisAlignment.end,
     children: [
       if (_isFullscreen) _buildMinimizeButton(),
+
+      // Przycisk do zmiany stanu znacznika
+      if (_selectedMarkerId != null) _buildToggleParkingSpotStatusButton(),
+
+      // Przycisk do dodawania wolnego miejsca parkingowego
       _buildToggleFreeParkingButton(),
+
+      // SpeedDial z dodatkowymi opcjami
       _buildSpeedDial(),
+
+      // Przycisk do przełączania trybu pełnoekranowego
       if (showFullscreenButton) ...[
         SizedBox(height: 20),
         _buildFullscreenButton(),
@@ -497,7 +537,4 @@ void addCurrentLocationAsOccupiedParking() async {
     _showErrorSnackBar('Failed to get current position');
   }
 }
-
-
-
 }
