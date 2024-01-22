@@ -263,7 +263,6 @@ class _MainPageState extends State<MainPage> {
   );
 }
 
-
   Widget _buildToggleFreeParkingButton() {
   return FloatingActionButton(
     onPressed: () {
@@ -489,7 +488,6 @@ Widget _buildToggleParkingSpotStatusButton() {
   );
 }
 
-
 Widget _buildFloatingActionButtons(bool showFullscreenButton) {
   return Column(
     mainAxisAlignment: MainAxisAlignment.end,
@@ -539,7 +537,4 @@ void addCurrentLocationAsOccupiedParking() async {
     _showErrorSnackBar('Failed to get current position');
   }
 }
-
-
-
 }
