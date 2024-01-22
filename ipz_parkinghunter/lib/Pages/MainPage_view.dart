@@ -454,22 +454,23 @@ class _MainPageState extends State<MainPage> {
     // Obsłuż błąd, np. pokazując domyślny znacznik lub rejestrując błąd
   }
 }
-void changeMarkerToFreeParking() async {
+void toggleParkingSpotStatus() async {
   if (_selectedMarkerId != null) {
-    // Pobierz aktualne dane znacznika
     database.child(_selectedMarkerId!).once().then((DatabaseEvent event) {
       if (event.snapshot.value != null) {
-        // Bezpieczne rzutowanie na Map<dynamic, dynamic>
         Map<dynamic, dynamic> markerData = event.snapshot.value as Map<dynamic, dynamic>;
         LatLng position = LatLng(markerData['latitude'], markerData['longitude']);
+        bool isCurrentlyFree = markerData['isFreeParking'];
 
-        // Aktualizuj znacznik w Firebase
         database.child(_selectedMarkerId!).update({
-          'isFreeParking': true,
+          'isFreeParking': !isCurrentlyFree,
         }).then((_) {
-          // Usuń stary znacznik i dodaj nowy z aktualizacją
           _markers.removeWhere((marker) => marker.markerId.value == _selectedMarkerId);
-          addFreeParkingMarker(_markers, position, _selectedMarkerId!);
+          if (!isCurrentlyFree) {
+            addFreeParkingMarker(_markers, position, _selectedMarkerId!);
+          } else {
+            addMarker(_markers, position, _selectedMarkerId!);
+          }
           setState(() {});
         });
       }
@@ -480,13 +481,13 @@ void changeMarkerToFreeParking() async {
   }
 }
 
-Widget _buildChangeToFreeParkingButton() {
-    return FloatingActionButton(
-      onPressed: changeMarkerToFreeParking,
-      child: Icon(Icons.change_circle),
-      backgroundColor: Colors.blue,
-    );
-  }
+Widget _buildToggleParkingSpotStatusButton() {
+  return FloatingActionButton(
+    onPressed: toggleParkingSpotStatus,
+    child: Icon(Icons.swap_horiz),
+    backgroundColor: Colors.blue,
+  );
+}
 
 
 Widget _buildFloatingActionButtons(bool showFullscreenButton) {
@@ -496,7 +497,7 @@ Widget _buildFloatingActionButtons(bool showFullscreenButton) {
       if (_isFullscreen) _buildMinimizeButton(),
 
       // Przycisk do zmiany stanu znacznika
-      if (_selectedMarkerId != null) _buildChangeToFreeParkingButton(),
+      if (_selectedMarkerId != null) _buildToggleParkingSpotStatusButton(),
 
       // Przycisk do dodawania wolnego miejsca parkingowego
       _buildToggleFreeParkingButton(),
