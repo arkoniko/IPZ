@@ -480,6 +480,14 @@ void changeMarkerToFreeParking() async {
   }
 }
 
+Widget _buildChangeToFreeParkingButton() {
+    return FloatingActionButton(
+      onPressed: changeMarkerToFreeParking,
+      child: Icon(Icons.change_circle),
+      backgroundColor: Colors.blue,
+    );
+  }
+
 
 Widget _buildFloatingActionButtons(bool showFullscreenButton) {
   return Column(
