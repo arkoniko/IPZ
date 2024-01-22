@@ -214,83 +214,56 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget _buildGoogleMap() {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: _isFullscreen ? 0 : MediaQuery.of(context).size.height * 0.4,
-      child: Column(
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius:
-                  _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
-              child: GoogleMap(
-                zoomControlsEnabled: false,
-                initialCameraPosition: CameraPosition(
-                  target: LatLng(53.447242736816406, 14.492215156555176),
-                  zoom: 10,
-                ),
-                onMapCreated: (GoogleMapController controller) {
-                  _mapController = controller;
-                },
-                markers: _markers,
-                onTap: (position) {
-                        DatabaseReference newMarkerRef = database.push();
-                        newMarkerRef.set({
-                          'latitude': position.latitude,
-                          'longitude': position.longitude,
-                          'isFreeParking': _addingFreeParking
-                        }).then((_) {
-                          if (_addingFreeParking) {
-                            addFreeParkingMarker(_markers, position, newMarkerRef.key!);
-                          } else {
-                            addMarker(_markers, position, newMarkerRef.key!);
-                          }
-                          setState(() {});
-                        }).catchError((error) => print('Error: $error'));
-                      },
-
-                onLongPress: (LatLng position){
-                  addCustomMarker(position);
-                }
+ Widget _buildGoogleMap() {
+  return Positioned(
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: _isFullscreen ? 0 : MediaQuery.of(context).size.height * 0.4,
+    child: Column(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: _isFullscreen ? BorderRadius.zero : BorderRadius.circular(20),
+            child: GoogleMap(
+              zoomControlsEnabled: false,
+              initialCameraPosition: CameraPosition(
+                target: LatLng(53.447242736816406, 14.492215156555176),
+                zoom: 10,
               ),
-                  zoomControlsEnabled: false,
-                  initialCameraPosition: CameraPosition(
-                    target: LatLng(53.447242736816406, 14.492215156555176),
-                    zoom: 10,
-                  ),
-                  onMapCreated: (GoogleMapController controller) {
-                    _mapController = controller;
-                  },
-                  markers: _markers,
-                  onTap: (position) {
-                    if (_addingFreeParking) {
-                      DatabaseReference newMarkerRef = database.push();
-                      newMarkerRef.set({
-                        'latitude': position.latitude,
-                        'longitude': position.longitude,
-                      }).then((_) {
-                        addMarker(_markers, position, newMarkerRef.key!);
-                        setState(() {});
-                      }).catchError((error) => print('Error: $error'));
-
-                      setState(() {
-                        _addingFreeParking = false;
-                      });
-                    }
-                  },
-                  onLongPress: (LatLng position) {
-                    addCustomMarker(position);
-                  }),
+              onMapCreated: (GoogleMapController controller) {
+                _mapController = controller;
+              },
+              markers: _markers,
+              onTap: (position) {
+                DatabaseReference newMarkerRef = database.push();
+                newMarkerRef.set({
+                  'latitude': position.latitude,
+                  'longitude': position.longitude,
+                  'isFreeParking': _addingFreeParking
+                }).then((_) {
+                  if (_addingFreeParking) {
+                    addFreeParkingMarker(_markers, position, newMarkerRef.key!);
+                  } else {
+                    addMarker(_markers, position, newMarkerRef.key!);
+                  }
+                  setState(() {
+                    _addingFreeParking = false; // Reset flag after adding marker
+                  });
+                }).catchError((error) => print('Error: $error'));
+              },
+              onLongPress: (LatLng position) {
+                addCustomMarker(position);
+              },
             ),
           ),
-          _selectedMarkerId != null ? _buildDeleteButton() : SizedBox(),
-        ],
-      ),
-    );
-  }
+        ),
+        _selectedMarkerId != null ? _buildDeleteButton() : SizedBox(),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildToggleFreeParkingButton() {
   return FloatingActionButton(
