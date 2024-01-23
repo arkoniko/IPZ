@@ -31,11 +31,13 @@ class _MainPageState extends State<MainPage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    loadMarkers();
-    _determinePosition();
-  }
+ void initState() {
+  super.initState();
+  loadMarkers();
+  _determinePosition();
+  monitorMarkerUpdates();
+  monitorMarkerDeletions();
+}
 
   Future<void> loadMarkers() async {
   database.onChildAdded.listen((event) {
@@ -56,24 +58,26 @@ class _MainPageState extends State<MainPage> {
   });
 }
 
-  void addMarker(Set<Marker> markers, LatLng position, String markerId) {
-    markers.add(
-      Marker(
-        markerId: MarkerId(markerId),
-        position: position,
-        infoWindow: InfoWindow(
-          title: 'Miejsce zajęte',
-        ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        onTap: () {
-          setState(() {
-            _selectedMarkerId = markerId;
-          });
-          print("Selected marker ID: $_selectedMarkerId");
-        },
-      ),
-    );
-  }
+  void addMarker(Set<Marker> markers, LatLng position, String markerId, {bool isFreeParking = false}) {
+  var marker = Marker(
+    markerId: MarkerId(markerId),
+    position: position,
+    infoWindow: InfoWindow(
+      title: isFreeParking ? 'Wolne miejsce parkingowe' : 'Miejsce zajęte',
+    ),
+    icon: isFreeParking 
+      ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)
+      : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+    onTap: () {
+      setState(() {
+        _selectedMarkerId = markerId;
+      });
+      print("Selected marker ID: $_selectedMarkerId");
+    },
+  );
+  markers.add(marker);
+}
+
 
   void _zoomIn() {
     _mapController.animateCamera(CameraUpdate.zoomIn());
@@ -102,6 +106,25 @@ class _MainPageState extends State<MainPage> {
   } catch (e) {
     print('Failed to get current position: $e');
     _showErrorSnackBar('Failed to get current position');
+  }
+}
+
+void toggleParkingSpotStatus() async {
+  if (_selectedMarkerId != null) {
+    database.child(_selectedMarkerId!).once().then((DatabaseEvent event) {
+      if (event.snapshot.value != null) {
+        Map<dynamic, dynamic> markerData = event.snapshot.value as Map<dynamic, dynamic>;
+        LatLng position = LatLng(markerData['latitude'], markerData['longitude']);
+        bool isCurrentlyFree = markerData['isFreeParking'];
+
+        database.child(_selectedMarkerId!).update({
+          'isFreeParking': !isCurrentlyFree,
+        });
+      }
+    }).catchError((error) {
+      print('Error updating marker: $error');
+      _showErrorSnackBar('Failed to update marker');
+    });
   }
 }
 
@@ -162,7 +185,7 @@ class _MainPageState extends State<MainPage> {
               elevation: 0.0,
               backgroundColor: Color.fromARGB(247, 15, 101, 158),
               title: Text(
-                'version 1.1.6',
+                'version 1.1.7',
                 style: TextStyle(
                   fontFamily: 'Arial',
                   color: Colors.white,
@@ -350,19 +373,65 @@ class _MainPageState extends State<MainPage> {
       backgroundColor: Colors.red,
     );
   }
+  void monitorMarkerUpdates() {
+  database.onChildChanged.listen((event) {
+    var markerData = event.snapshot.value as Map?;
+    if (markerData != null) {
+      var markerId = event.snapshot.key!;
+      var newPosition = LatLng(markerData['latitude'], markerData['longitude']);
+      var isFreeParking = markerData['isFreeParking'];
+      updateMarker(markerId, newPosition, isFreeParking);
+    }
+  });
+}
 
-  void removeMarker(String markerId) {
-    // Remove the marker locally
-    _markers.removeWhere((marker) => marker.markerId.value == markerId);
-    // Remove the marker from the Firebase Realtime Database
-    database.child(markerId).remove().then((_) {
-      print("Marker removed from the database.");
-      setState(() {
-        // Trigger a refresh to update the markers on all devices
-        loadMarkers();
-      });
-    }).catchError((error) => print('Error: $error'));
+  void monitorMarkerDeletions() {
+  database.onChildRemoved.listen((event) {
+    var markerId = event.snapshot.key!;
+    removeMarker(markerId, notifyServer: false);
+  });
+}
+
+void updateMarker(String markerId, LatLng newPosition, bool isFreeParking) async {
+  BitmapDescriptor icon;
+  if (isFreeParking) {
+    icon = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(size: Size(48, 48)),
+      'lib/images/marker_green.png', // Ścieżka do niestandardowej ikony znacznika dla wolnego miejsca
+    );
+  } else {
+    icon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed); // Standardowa ikona dla zajętego miejsca
   }
+
+  setState(() {
+    _markers.removeWhere((m) => m.markerId.value == markerId);
+    _markers.add(
+      Marker(
+        markerId: MarkerId(markerId),
+        position: newPosition,
+        infoWindow: InfoWindow(
+          title: isFreeParking ? 'Wolne miejsce parkingowe' : 'Miejsce zajęte',
+        ),
+        icon: icon,
+        onTap: () {
+          _selectedMarkerId = markerId;
+          setState(() {});
+        },
+      ),
+    );
+  });
+}
+
+
+void removeMarker(String markerId, {bool notifyServer = true}) {
+  setState(() {
+    _markers.removeWhere((m) => m.markerId.value == markerId);
+  });
+  if (notifyServer) {
+    database.child(markerId).remove();
+  }
+}
+
 
   void removeCustomMarker(String markerId) {
     _markers.removeWhere((marker) => marker.markerId.value == markerId);
@@ -451,32 +520,6 @@ class _MainPageState extends State<MainPage> {
   } catch (e) {
     print('Error loading custom marker icon: $e');
     // Obsłuż błąd, np. pokazując domyślny znacznik lub rejestrując błąd
-  }
-}
-void toggleParkingSpotStatus() async {
-  if (_selectedMarkerId != null) {
-    database.child(_selectedMarkerId!).once().then((DatabaseEvent event) {
-      if (event.snapshot.value != null) {
-        Map<dynamic, dynamic> markerData = event.snapshot.value as Map<dynamic, dynamic>;
-        LatLng position = LatLng(markerData['latitude'], markerData['longitude']);
-        bool isCurrentlyFree = markerData['isFreeParking'];
-
-        database.child(_selectedMarkerId!).update({
-          'isFreeParking': !isCurrentlyFree,
-        }).then((_) {
-          _markers.removeWhere((marker) => marker.markerId.value == _selectedMarkerId);
-          if (!isCurrentlyFree) {
-            addFreeParkingMarker(_markers, position, _selectedMarkerId!);
-          } else {
-            addMarker(_markers, position, _selectedMarkerId!);
-          }
-          setState(() {});
-        });
-      }
-    }).catchError((error) {
-      print('Error updating marker: $error');
-      _showErrorSnackBar('Failed to update marker');
-    });
   }
 }
 
